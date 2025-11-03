@@ -1,0 +1,25 @@
+{
+  "name": "paper-roll-wms",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "next": "14.2.3",
+    "firebase": "^10.11.1",
+    "dexie": "^3.2.4",
+    "dexie-react-hooks": "^1.1.7",
+    "xlsx": "^0.18.5",
+    "react-qr-scanner": "^1.0.0-alpha.11"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3"
+  }
+}
