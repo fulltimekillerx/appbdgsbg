@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "paper_rolls": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$roll_id": {
+        ".validate": "newData.hasChildren(['roll_id', 'gsm', 'width', 'length', 'diameter', 'bin_location', 'goods_receive_date', 'paper_type', 'kind', 'weight', 'status', 'updated_at', 'created_at']) && newData.getchild('roll_id').isString() && newData.getchild('roll_id').val().length() > 0"
+      }
+    },
+    "movement_logs": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
