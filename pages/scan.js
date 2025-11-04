@@ -1,16 +1,29 @@
-import React from 'react';
-// import useBarcodeScanner from '../hooks/useBarcodeScanner';
+import React, { useState } from 'react';
+import QrReader from 'react-qr-scanner';
 
 export default function Scan() {
-  // const { startScanner, stopScanner, scannedCode } = useBarcodeScanner();
+  const [result, setResult] = useState('No result');
+
+  const handleScan = (data) => {
+    if (data) {
+      setResult(data);
+    }
+  };
+
+  const handleError = (err) => {
+    console.error(err);
+  };
 
   return (
     <div>
-      <h1>Scan QR/Barcode</h1>
-      {/* <button onClick={startScanner}>Start Scanner</button>
-      <button onClick={stopScanner}>Stop Scanner</button>
-      {scannedCode && <p>Scanned Code: {scannedCode}</p>} */}
-      <div id="scanner-container"></div>
+      <h1>Scan Roll</h1>
+      <QrReader
+        delay={300}
+        onError={handleError}
+        onScan={handleScan}
+        style={{ width: '100%' }}
+      />
+      <p>{result}</p>
     </div>
   );
 }
