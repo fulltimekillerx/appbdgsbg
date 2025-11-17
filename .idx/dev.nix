@@ -7,9 +7,15 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.nodejs_20
+    # Add Supabase CLI for interacting with your Supabase project
+    pkgs.supabase-cli
   ];
   # Sets environment variables in the workspace
-  env = {};
+  env = {
+    # Using secrets for Supabase credentials
+    NEXT_PUBLIC_SUPABASE_URL = "$SUPABASE_URL";
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "$SUPABASE_ANON_KEY"; 
+  };
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
