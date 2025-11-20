@@ -1,0 +1,32 @@
+[debug] [2025-11-18T03:53:48.969Z] ----------------------------------------------------------------------
+[debug] [2025-11-18T03:53:48.986Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /nix/store/f77kilzcw5hh2gidh22k6pj8cp7pxp7h-firebase-tools-14.22.0/lib/node_modules/firebase-tools/lib/bin/firebase.js init hosting
+[debug] [2025-11-18T03:53:48.988Z] CLI Version:   14.22.0
+[debug] [2025-11-18T03:53:48.988Z] Platform:      linux
+[debug] [2025-11-18T03:53:48.988Z] Node Version:  v20.19.1
+[debug] [2025-11-18T03:53:48.989Z] Time:          Tue Nov 18 2025 03:53:48 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-11-18T03:53:48.989Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-11-18T03:53:50.061Z] No OAuth tokens found
+[debug] [2025-11-18T03:53:50.062Z] No OAuth tokens found
+[error] Failed to fetch Firebase Project from current Studio Workspace: Unable to refresh auth: not yet authenticated.
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/appbdgsbg
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
