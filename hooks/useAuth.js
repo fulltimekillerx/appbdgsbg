@@ -26,8 +26,16 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const signup = async (email, password) => {
-    return await supabase.auth.signUp({ email, password });
+  const signup = async (email, password, name) => {
+    return await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name,
+        },
+      },
+    });
   };
 
   const login = async (email, password) => {
