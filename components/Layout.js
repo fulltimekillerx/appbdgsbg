@@ -21,15 +21,17 @@ const Layout = ({ children }) => {
 
   const menuItems = {
     "Paper Roll": [
-      { href: "/paper-roll/dashboard", label: "Dashboard" },
-      { href: "/paper-roll/inventory", label: "Inventory" },
-      { href: "/paper-roll/opname-report", label: "Opname Report" },
-      { href: "/paper-roll/stock-opname", label: "Stock Opname" },
-      { href: "/paper-roll/upload-stock", label: "Upload Stock" },
+      { href: "/paper-roll/pr-dashboard", label: "Dashboard" },
+      { href: "/paper-roll/pr-stock", label: "Inventory Stock" },
+      { href: "/paper-roll/pr-opname-report", label: "Opname Report" },
+      { href: "/paper-roll/pr-stock-opname", label: "Stock Opname" },
+      { href: "/paper-roll/pr-upload-stock", label: "Upload Stock" },
     ],
     "Logistic": [
-        { href: "/logistic/fg-receive", label: "FG Receive" },
-        { href: "/logistic/fg-receivedata", label: "FG Receive Data" },
+        { href: "/logistic/fg-receive", label: "Goods Receive" },
+        { href: "/logistic/fg-receivedata", label: "Goods Receive Data" },
+        { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule" },
+        { href: "/logistic/fg-upload-delivery-schedule", label: "Upload Delivery Schedule" },
     ],
     "Account": [
       { href: "/account/edit-account", label: "Edit Account" },

@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
 const EditAccount = () => {
-  const { user } = useAuth();
-  const [name, setName] = useState(user?.user_metadata.name || '');
+  const { user, updateUser } = useAuth();
+  const [displayName, setDisplayName] = useState(user?.user_metadata.display_name || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
 
-  const handleNameChange = (e) => {
-    setName(e.target.value);
+  const handleDisplayNameChange = (e) => {
+    setDisplayName(e.target.value);
   };
 
   const handleCurrentPasswordChange = (e) => {
@@ -19,17 +21,32 @@ const EditAccount = () => {
     setNewPassword(e.target.value);
   };
 
-  const handleNameSubmit = (e) => {
+  const handleDisplayNameSubmit = async (e) => {
     e.preventDefault();
-    // Handle name update logic here
-    console.log('New name:', name);
+    setError(null);
+    setMessage(null);
+    const { data, error: updateError } = await updateUser({ data: { display_name: displayName } });
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setMessage('Successfully updated your display name.');
+    }
   };
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    // Handle password change logic here
-    console.log('Current password:', currentPassword);
-    console.log('New password:', newPassword);
+    setError(null);
+    setMessage(null);
+    // Supabase does not have a direct way to verify the current password before changing it.
+    // The `updateUser` function with a new password will change it directly.
+    const { data, error: passwordError } = await updateUser({ password: newPassword });
+    if (passwordError) {
+      setError(passwordError.message);
+    } else {
+      setMessage('Successfully updated your password.');
+      setCurrentPassword('');
+      setNewPassword('');
+    }
   };
 
   return (
@@ -68,35 +85,39 @@ const EditAccount = () => {
           border-top: 1px solid #ccc;
           margin: 2rem 0;
         }
+        .error {
+          color: red;
+          grid-column: 1 / -1;
+          text-align: center;
+        }
+        .message {
+          color: green;
+          grid-column: 1 / -1;
+          text-align: center;
+        }
       `}</style>
 
-      <form onSubmit={handleNameSubmit} className="form-grid">
-        <h3>Edit Name</h3>
+      {error && <p className="error">{error}</p>}
+      {message && <p className="message">{message}</p>}
+
+      <form onSubmit={handleDisplayNameSubmit} className="form-grid">
+        <h3>Edit Display Name</h3>
         <div className="form-group">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="displayName">Display Name</label>
           <input
             type="text"
-            id="name"
-            value={name}
-            onChange={handleNameChange}
+            id="displayName"
+            value={displayName}
+            onChange={handleDisplayNameChange}
           />
         </div>
-        <button type="submit">Save Name</button>
+        <button type="submit">Save Display Name</button>
       </form>
 
       <hr />
 
       <form onSubmit={handlePasswordSubmit} className="form-grid">
         <h3>Change Password</h3>
-        <div className="form-group">
-          <label htmlFor="currentPassword">Current Password</label>
-          <input
-            type="password"
-            id="currentPassword"
-            value={currentPassword}
-            onChange={handleCurrentPasswordChange}
-          />
-        </div>
         <div className="form-group">
           <label htmlFor="newPassword">New Password</label>
           <input
