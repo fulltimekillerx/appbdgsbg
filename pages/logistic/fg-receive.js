@@ -36,7 +36,7 @@ const FGReceive = ({ plant }) => {
         {
           lmg_number: lmgNumber,
           bin_location: binLocation,
-          user_name: user?.user_metadata.name,
+          user_id: user?.id,
           plant: plant,
         },
       ]);

@@ -5,7 +5,7 @@ export default function Home() {
 
   return (
     <div>
-      <h1>Paper Roll Warehouse Management</h1>
+      <h1>Warehouse Management System</h1>
     </div>
   );
 }
