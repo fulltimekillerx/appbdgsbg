@@ -171,43 +171,43 @@ const OpnameReport = () => {
       {loading ? (
         <p>Loading report...</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table>
           <thead>
             <tr>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Scanned At</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Scanned By</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Scanned Roll ID</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Kind</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>GSM</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Width</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Diameter</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Weight</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Batch</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Goods Receive Date</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Aging</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Master Bin Location</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Scanned Bin Location</th>
-              <th style={{ border: '1px solid black', padding: '8px' }}>Action</th>
+              <th>Scanned At</th>
+              <th>Scanned By</th>
+              <th>Scanned Roll ID</th>
+              <th>Kind</th>
+              <th>GSM</th>
+              <th>Width</th>
+              <th>Diameter</th>
+              <th>Weight</th>
+              <th>Batch</th>
+              <th>Goods Receive Date</th>
+              <th>Aging</th>
+              <th>Master Bin Location</th>
+              <th>Scanned Bin Location</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {opnamedRolls.length > 0 ? (
               opnamedRolls.map(roll => (
                 <tr key={roll.id}>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.opname_at}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.user_name}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.scanned_roll_id}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.kind}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.gsm}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.width}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.diameter}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.weight}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.batch}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.goods_receive_date}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.aging}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.master_bin_location}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>{roll.scanned_bin_location}</td>
-                  <td style={{ border: '1px solid black', padding: '8px' }}>
+                  <td>{roll.opname_at}</td>
+                  <td>{roll.user_name}</td>
+                  <td>{roll.scanned_roll_id}</td>
+                  <td>{roll.kind}</td>
+                  <td>{roll.gsm}</td>
+                  <td>{roll.width}</td>
+                  <td>{roll.diameter}</td>
+                  <td>{roll.weight}</td>
+                  <td>{roll.batch}</td>
+                  <td>{roll.goods_receive_date}</td>
+                  <td>{roll.aging}</td>
+                  <td>{roll.master_bin_location}</td>
+                  <td>{roll.scanned_bin_location}</td>
+                  <td>
                     <button onClick={() => handleDelete(roll.id, roll.scanned_roll_id)}>
                       Delete
                     </button>
@@ -216,7 +216,7 @@ const OpnameReport = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="14" style={{ textAlign: 'center', padding: '20px' }}>
+                <td colSpan="14">
                   No rolls found for the selected criteria.
                 </td>
               </tr>

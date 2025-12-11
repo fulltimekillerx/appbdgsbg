@@ -164,42 +164,42 @@ export default function Inventory({ plant }) {
         <span style={{ margin: '0 10px' }}>Page {currentPage} of {totalPages}</span>
         <button onClick={handleNextPage} disabled={currentPage === totalPages}>Next</button>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table>
         <thead>
           <tr>
-            <th onClick={() => requestSort('roll_id')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Roll ID</th>
-            <th onClick={() => requestSort('batch')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Batch</th>
-            <th onClick={() => requestSort('kind')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Kind</th>
-            <th onClick={() => requestSort('gsm')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>GSM</th>
-            <th onClick={() => requestSort('width')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Width</th>
-            <th onClick={() => requestSort('length')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Length</th>
-            <th onClick={() => requestSort('diameter')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Diameter</th>
-            <th onClick={() => requestSort('bin_location')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Bin Location</th>
-            <th onClick={() => requestSort('goods_receive_date')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Goods Receive Date</th>
-            <th onClick={() => requestSort('aging')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Aging (days)</th>
-            <th onClick={() => requestSort('weight')} style={{ border: '1px solid black', padding: '8px', cursor: 'pointer' }}>Weight</th>
+            <th onClick={() => requestSort('roll_id')} style={{ cursor: 'pointer' }}>Roll ID</th>
+            <th onClick={() => requestSort('batch')} style={{ cursor: 'pointer' }}>Batch</th>
+            <th onClick={() => requestSort('kind')} style={{ cursor: 'pointer' }}>Kind</th>
+            <th onClick={() => requestSort('gsm')} style={{ cursor: 'pointer' }}>GSM</th>
+            <th onClick={() => requestSort('width')} style={{ cursor: 'pointer' }}>Width</th>
+            <th onClick={() => requestSort('length')} style={{ cursor: 'pointer' }}>Length</th>
+            <th onClick={() => requestSort('diameter')} style={{ cursor: 'pointer' }}>Diameter</th>
+            <th onClick={() => requestSort('bin_location')} style={{ cursor: 'pointer' }}>Bin Location</th>
+            <th onClick={() => requestSort('goods_receive_date')} style={{ cursor: 'pointer' }}>Goods Receive Date</th>
+            <th onClick={() => requestSort('aging')} style={{ cursor: 'pointer' }}>Aging (days)</th>
+            <th onClick={() => requestSort('weight')} style={{ cursor: 'pointer' }}>Weight</th>
           </tr>
         </thead>
         <tbody>
           {paginatedRolls.length > 0 ? (
             paginatedRolls.map(roll => (
               <tr key={roll.roll_id}>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.roll_id}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.batch}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.kind}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.gsm}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.width}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.length}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.diameter}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.bin_location}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.goods_receive_date ? formatDate(new Date(roll.goods_receive_date)) : 'N/A'}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.aging}</td>
-                <td style={{ border: '1px solid black', padding: '8px' }}>{roll.weight}</td>
+                <td>{roll.roll_id}</td>
+                <td>{roll.batch}</td>
+                <td>{roll.kind}</td>
+                <td>{roll.gsm}</td>
+                <td>{roll.width}</td>
+                <td>{roll.length}</td>
+                <td>{roll.diameter}</td>
+                <td>{roll.bin_location}</td>
+                <td>{roll.goods_receive_date ? formatDate(new Date(roll.goods_receive_date)) : 'N/A'}</td>
+                <td>{roll.aging}</td>
+                <td>{roll.weight}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="11" style={{ textAlign: 'center', padding: '20px' }}>
+              <td colSpan="11">
                 No inventory found.
               </td>
             </tr>

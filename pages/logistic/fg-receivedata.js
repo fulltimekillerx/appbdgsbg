@@ -79,25 +79,7 @@ const FGReceiveData = ({ plant }) => {
         Refresh Data
       </button>
       {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <style jsx>{`
-        table, th, td {
-          border: 1px solid black;
-          border-collapse: collapse;
-          padding: 8px;
-        }
-        table {
-          width: 100%;
-          margin-top: 1rem;
-        }
-        th {
-          cursor: pointer;
-          user-select: none;
-        }
-        th:hover {
-          background-color: #f2f2f2;
-        }
-      `}</style>
+      {error && <p className="error-message">{error}</p>}
       {receiveData.length > 0 && (
         <table>
           <thead>

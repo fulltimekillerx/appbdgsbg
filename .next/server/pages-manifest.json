@@ -1,1 +1,6 @@
-{"/_app":"pages/_app.js","/_error":"pages/_error.js","/account/edit-account":"pages/account/edit-account.html","/forgot-password":"pages/forgot-password.html","/":"pages/index.html","/login":"pages/login.html","/logistic/fg-delivery-schedule":"pages/logistic/fg-delivery-schedule.html","/logistic/fg-receive":"pages/logistic/fg-receive.html","/logistic/fg-receivedata":"pages/logistic/fg-receivedata.html","/logistic/fg-upload-delivery-schedule":"pages/logistic/fg-upload-delivery-schedule.html","/paper-roll/pr-dashboard":"pages/paper-roll/pr-dashboard.html","/paper-roll/pr-opname-report":"pages/paper-roll/pr-opname-report.html","/paper-roll/pr-stock":"pages/paper-roll/pr-stock.html","/paper-roll/pr-upload-stock":"pages/paper-roll/pr-upload-stock.html","/paper-roll/roll/[id]":"pages/paper-roll/roll/[id].html","/signup":"pages/signup.html","/_document":"pages/_document.js","/404":"pages/404.html"}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js"
+}
