@@ -35,6 +35,7 @@ const Layout = ({ children }) => {
     ],
     "Account": [
       { href: "/account/edit-account", label: "Edit Account" },
+      { href: "/account/user-manager", label: "User Manager" }
     ],
   };
 
@@ -90,7 +91,7 @@ const Layout = ({ children }) => {
       <main className="main">
         <div className="header">
           <h1>WMS</h1>
-          {user && <span>Welcome, {user.user_metadata.name}</span>}
+          {user && <span>Welcome, {user.user_metadata.display_name}</span>}
         </div>
         <div className="content">
           {childrenWithProps}
