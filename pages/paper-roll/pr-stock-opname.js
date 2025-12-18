@@ -1,6 +1,6 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 
 const StockOpname = () => {
@@ -10,6 +10,19 @@ const StockOpname = () => {
   const [scannedRolls, setScannedRolls] = useState([]);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+            console.error('Error getting session:', error);
+            return;
+        }
+        setUser(session?.user ?? null);
+    };
+    fetchUser();
+  }, []);
 
   const handleRollScan = async () => {
     if (!rollId) {
@@ -20,31 +33,33 @@ const StockOpname = () => {
         setMessage('Please lock a bin location before scanning.');
         return;
     }
+    if (!user) {
+        setMessage('You must be logged in to scan.');
+        return;
+    }
 
     setIsSubmitting(true);
     setMessage('');
 
     try {
-      // First, check if the roll exists in the master data
       const { data: existingRoll, error: fetchError } = await supabase
-        .from('paper_rolls')
-        .select('roll_id, kind, gsm, width') // select only what's needed
+        .from('pr_stock')
+        .select('roll_id, kind, gsm, width')
         .eq('roll_id', rollId)
         .single();
 
-      // PGRST116 means no row was found, which is not an error in this case.
       if (fetchError && fetchError.code !== 'PGRST116') {
         throw fetchError;
       }
 
-      // Now, insert the scan event into the new table
       const { error: insertError } = await supabase
         .from('pr_stock_opname_events')
         .insert({
-          roll_id: rollId,
+          scanned_id: rollId,
           bin_location: binLocation,
           opname_at: new Date().toISOString(),
-          paper_roll_id: existingRoll ? existingRoll.roll_id : null, // Link to the master roll if it exists
+          roll_id: existingRoll ? existingRoll.roll_id : null,
+          user_id: user.user_metadata?.display_name || user.email,
         });
 
       if (insertError) {
@@ -52,12 +67,10 @@ const StockOpname = () => {
       }
 
       if (existingRoll) {
-        // If the roll was found in master data, add its details to the scanned list
         const rollForUI = { ...existingRoll, id: `db-${rollId}-${Date.now()}` };
         setScannedRolls(prev => [rollForUI, ...prev]);
         setMessage(`Roll ID ${rollId} scanned and recorded successfully.`);
       } else {
-        // If the roll is not in the master list, create a temporary object for the UI
         setMessage(`Roll ID ${rollId} not in master data, but recorded in this session.`);
         const newRoll = {
           id: `new-${rollId}-${Date.now()}`,
@@ -69,7 +82,7 @@ const StockOpname = () => {
         setScannedRolls(prev => [newRoll, ...prev]);
       }
 
-      setRollId(''); // Clear input after successful scan
+      setRollId('');
 
     } catch (error) {
       console.error('Error scanning roll:', error);

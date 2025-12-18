@@ -25,7 +25,7 @@ const FGReceiveData = ({ plant }) => {
         lmg_number,
         bin_location,
         plant,
-        user:user_id(raw_user_meta_data)
+        user_id
       `)
       .eq('plant', plant);
 
@@ -87,7 +87,7 @@ const FGReceiveData = ({ plant }) => {
               <th onClick={() => handleSort('lmg_number')}>LMG Number{getSortIndicator('lmg_number')}</th>
               <th onClick={() => handleSort('bin_location')}>Bin Location{getSortIndicator('bin_location')}</th>
               <th onClick={() => handleSort('created_at')}>Received At{getSortIndicator('created_at')}</th>
-              <th onClick={() => handleSort('user')}>User{getSortIndicator('user')}</th>
+              <th onClick={() => handleSort('user_id')}>User{getSortIndicator('user_id')}</th>
             </tr>
           </thead>
           <tbody>
@@ -96,7 +96,7 @@ const FGReceiveData = ({ plant }) => {
                 <td>{item.lmg_number}</td>
                 <td>{item.bin_location}</td>
                 <td>{new Date(item.created_at).toLocaleString()}</td>
-                <td>{item.user.raw_user_meta_data.display_name}</td>
+                <td>{item.user_id}</td>
               </tr>
             ))}
           </tbody>

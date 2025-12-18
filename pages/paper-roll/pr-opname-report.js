@@ -28,10 +28,10 @@ const OpnameReport = () => {
         .select(`
           id,
           opname_at,
-          roll_id,
+          scanned_id,
           bin_location,
-          paper_roll_id,
-          user:user_id(raw_user_meta_data)
+          roll_id,
+          user_id
         `)
         .gte('opname_at', startDate)
         .lte('opname_at', endDate)
@@ -47,12 +47,12 @@ const OpnameReport = () => {
         throw eventsError;
       }
 
-      const rollIds = [...new Set(eventsData.map(e => e.paper_roll_id).filter(id => id))];
+      const rollIds = [...new Set(eventsData.map(e => e.roll_id).filter(id => id))];
 
       let rollsMap = new Map();
       if (rollIds.length > 0) {
           const { data: rollsData, error: rollsError } = await supabase
-            .from('paper_rolls')
+            .from('pr_stock')
             .select('roll_id, kind, gsm, width, diameter, weight, batch, goods_receive_date, bin_location')
             .in('roll_id', rollIds);
 
@@ -64,15 +64,16 @@ const OpnameReport = () => {
 
 
       const events = eventsData.map(event => {
-        const roll = rollsMap.get(event.paper_roll_id);
+        const roll = rollsMap.get(event.roll_id);
+        const userName = event.user_id || 'N/A';
         
         if (!roll) {
           return {
             id: event.id,
             opname_at: new Date(event.opname_at).toLocaleString(),
-            scanned_roll_id: event.roll_id,
+            scanned_roll_id: event.scanned_id,
             scanned_bin_location: event.bin_location,
-            user_name: event.user.raw_user_meta_data.display_name || 'N/A',
+            user_name: userName,
             kind: 'N/A',
             gsm: 'N/A',
             width: 'N/A',
@@ -91,9 +92,9 @@ const OpnameReport = () => {
         return {
           id: event.id,
           opname_at: new Date(event.opname_at).toLocaleString(),
-          scanned_roll_id: event.roll_id,
+          scanned_roll_id: event.scanned_id,
           scanned_bin_location: event.bin_location,
-          user_name: event.user.raw_user_meta_data.display_name || 'N/A',
+          user_name: userName,
           kind: roll.kind,
           gsm: roll.gsm,
           width: roll.width,
