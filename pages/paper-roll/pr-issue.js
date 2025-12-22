@@ -99,13 +99,13 @@ const PRIssue = ({ plant }) => {
 
   const handleCancel = async (roll) => {
     try {
-      // Backward-compatible: find the issue movement using new (destination_loc) or old (to_location) column names.
+      // Find the issue movement using the destination_loc column.
       const { data: issueMovement, error: movementError } = await supabase
         .from('pr_stock_movements')
-        .select('id, initial_loc, from_location') // Select both new and old source location columns
+        .select('id, initial_loc') // Select the source location column
         .eq('roll_id', roll.roll_id)
         .eq('movement_type', '201')
-        .or(`destination_loc.eq.${roll.bin_location},to_location.eq.${roll.bin_location}`) // Check both destination columns
+        .eq('destination_loc', roll.bin_location) // Check the destination column
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
@@ -114,7 +114,7 @@ const PRIssue = ({ plant }) => {
         throw new Error(`Could not find the specific 'issue' movement to cancel for roll ${roll.roll_id}. It may have been cancelled already.`);
       }
 
-      const originalLocation = issueMovement.initial_loc || issueMovement.from_location;
+      const originalLocation = issueMovement.initial_loc;
       if (!originalLocation) {
           throw new Error(`Original location for roll ${roll.roll_id} is missing from its movement history.`);
       }
