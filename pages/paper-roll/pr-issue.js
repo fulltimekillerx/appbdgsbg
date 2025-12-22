@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../hooks/useAuth';
 
 const PRIssue = ({ plant }) => { // Accept plant as a prop
+  const router = useRouter();
   const [machineNumber, setMachineNumber] = useState('C1');
   const [isMachineLocked, setIsMachineLocked] = useState(false);
   const [unitName, setUnitName] = useState('CL');
@@ -74,7 +76,7 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
         {
           roll_id: stockData.roll_id,
           plant: plant, // Record plant
-          movement_type: '201',
+          movement_type: '201', // Issue to production
           initial_loc: stockData.bin_location,
           destination_loc: destination,
           weight: stockData.weight,
@@ -107,6 +109,76 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
       setRollId(''); // Clear input for next scan
     } catch (error) {
       setError(error.message);
+    }
+  };
+
+  const handleCancel = async (roll) => {
+    try {
+      // Find the specific 'issue' movement (type '201') that moved the roll to its current location.
+      const { data: issueMovement, error: movementError } = await supabase
+        .from('pr_stock_movements')
+        .select('id, initial_loc')
+        .eq('roll_id', roll.roll_id)
+        .eq('movement_type', '201') // Specifically find the 'issue' movement
+        .eq('destination_loc', roll.bin_location) // That resulted in the current location
+        .order('created_at', { ascending: false }) // Get the most recent one
+        .limit(1)
+        .single();
+
+      if (movementError || !issueMovement) {
+        throw new Error(`Could not find the specific 'issue' movement to cancel for roll ${roll.roll_id}. It may have already been cancelled or returned.`);
+      }
+
+      // Revert the bin_location in pr_stock to the initial location from the movement
+      const { error: updateError } = await supabase
+        .from('pr_stock')
+        .update({ bin_location: issueMovement.initial_loc })
+        .eq('roll_id', roll.roll_id);
+
+      if (updateError) {
+        throw new Error(`Failed to revert stock location: ${updateError.message}`);
+      }
+
+      // Delete the movement record from pr_stock_movements
+      const { error: deleteError } = await supabase
+        .from('pr_stock_movements')
+        .delete()
+        .eq('id', issueMovement.id);
+
+      if (deleteError) {
+        throw new Error(`Failed to delete the movement history record: ${deleteError.message}.`);
+      }
+
+      // Refresh the list of production rolls
+      await fetchProductionRolls();
+      setMessage(`Cancelled issue of roll ${roll.roll_id}.`);
+    } catch (error) {
+      setError(`Error cancelling issue: ${error.message}`);
+    }
+  };
+
+  const handleReturn = (roll) => {
+    // Navigate to the pr-return page with roll_id and bin_location as query parameters
+    router.push(`/paper-roll/pr-return?roll_id=${roll.roll_id}&bin_location=${roll.bin_location}`);
+  };
+
+  const handleUsedUp = async (roll) => {
+    try {
+      // Delete the roll from pr_stock
+      const { error } = await supabase
+        .from('pr_stock')
+        .delete()
+        .eq('roll_id', roll.roll_id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh the list of production rolls
+      await fetchProductionRolls();
+      setMessage(`Roll ${roll.roll_id} marked as used up and removed from stock.`);
+    } catch (error) {
+      setError(`Error marking roll as used up: ${error.message}`);
     }
   };
 
@@ -187,6 +259,7 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
             <th>Width</th>
             <th>Weight</th>
             <th>Location</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -199,11 +272,16 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
                 <td>{roll.width}</td>
                 <td>{roll.weight}</td>
                 <td>{roll.bin_location}</td>
+                <td>
+                  <button className="btn btn-sm btn-warning mr-2" onClick={() => handleCancel(roll)}>Cancel</button>
+                  <button className="btn btn-sm btn-info mr-2" onClick={() => handleReturn(roll)}>Return</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleUsedUp(roll)}>Used Up</button>
+                </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="6" className="text-center">No rolls found at this production location.</td>
+              <td colSpan="7" className="text-center">No rolls found at this production location.</td>
             </tr>
           )}
         </tbody>

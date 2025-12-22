@@ -8,6 +8,7 @@ const PRMovement = ({ plant }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const { user } = useAuth() || {};
+  const [sessionMovements, setSessionMovements] = useState([]);
 
   const handleMovement = async (e) => {
     e.preventDefault();
@@ -35,7 +36,7 @@ const PRMovement = ({ plant }) => {
         throw new Error(`Roll ID ${rollId} not found in plant ${plant}.`);
       }
 
-      const { error: movementError } = await supabase.from('pr_stock_movements').insert([
+      const { data: movementData, error: movementError } = await supabase.from('pr_stock_movements').insert([
         {
           roll_id: rollId,
           plant: plant,
@@ -48,7 +49,7 @@ const PRMovement = ({ plant }) => {
           prod_order_no: stockData.prod_order_no,
           user_id: user.user_metadata.display_name || user.email,
         },
-      ]);
+      ]).select();
 
       if (movementError) {
         throw movementError;
@@ -64,6 +65,14 @@ const PRMovement = ({ plant }) => {
         throw updateError;
       }
 
+      const newMovement = {
+        id: movementData[0].id,
+        roll_id: rollId,
+        initial_loc: stockData.bin_location,
+        destination_loc: newLocation,
+      };
+      setSessionMovements(prevMovements => [newMovement, ...prevMovements]);
+
       setMessage('Movement successful!');
       setRollId('');
       setNewLocation('');
@@ -71,6 +80,38 @@ const PRMovement = ({ plant }) => {
       setError(error.message);
     }
   };
+
+  const handleCancelMovement = async (movement) => {
+    try {
+      // Revert the bin location in pr_stock
+      const { error: updateError } = await supabase
+        .from('pr_stock')
+        .update({ bin_location: movement.initial_loc })
+        .eq('roll_id', movement.roll_id)
+        .eq('plant', plant);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Delete the movement from pr_stock_movements
+      const { error: deleteError } = await supabase
+        .from('pr_stock_movements')
+        .delete()
+        .eq('id', movement.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      // Remove the movement from the session movements in the UI
+      setSessionMovements(prevMovements => prevMovements.filter(m => m.id !== movement.id));
+      setMessage('Movement cancelled.');
+    } catch (error) {
+      setError(`Error cancelling movement: ${error.message}`);
+    }
+  };
+
 
   return (
     <div>
@@ -101,6 +142,38 @@ const PRMovement = ({ plant }) => {
         </div>
         <button type="submit">Move Roll</button>
       </form>
+
+      <h2>Movements in this Session</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Roll ID</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sessionMovements.length > 0 ? (
+            sessionMovements.map(move => (
+              <tr key={move.id}>
+                <td>{move.roll_id}</td>
+                <td>{move.initial_loc}</td>
+                <td>{move.destination_loc}</td>
+                <td>
+                  <button onClick={() => handleCancelMovement(move)}>Cancel</button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="4">
+                No movements in this session yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 };

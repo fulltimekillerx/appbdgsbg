@@ -29,6 +29,8 @@ const Layout = ({ children }) => {
       { href: "/paper-roll/pr-stock", label: "Inventory Stock" },
       { href: "/paper-roll/pr-issue", label: "Goods Issue" },
       { href: "/paper-roll/pr-movement", label: "Goods Movement" },
+      { href: "/paper-roll/pr-receive", label: "Goods Receive" },
+      { href: "/paper-roll/pr-return", label: "Goods Return" },
       { href: "/paper-roll/pr-movement-history", label: "Movement History" }, // Added new page
       { href: "/paper-roll/pr-opname-report", label: "Opname Report" },
       { href: "/paper-roll/pr-stock-opname", label: "Stock Opname" },
