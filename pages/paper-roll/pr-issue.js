@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../hooks/useAuth';
 
-const PRIssue = ({ plant }) => { // Accept plant as a prop
+const PRIssue = ({ plant }) => {
   const router = useRouter();
   const [machineNumber, setMachineNumber] = useState('C1');
   const [isMachineLocked, setIsMachineLocked] = useState(false);
@@ -12,9 +12,8 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
   const [productionRolls, setProductionRolls] = useState([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const { user } = useAuth() || {}; // Safely destructure user
+  const { user } = useAuth() || {};
 
-  // Fetches rolls that are currently at the selected production destination for the current plant
   const fetchProductionRolls = async () => {
     if (!plant) return;
     const destination = `${machineNumber} - ${unitName}`;
@@ -22,7 +21,7 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
       .from('pr_stock')
       .select('*')
       .eq('bin_location', destination)
-      .eq('plant', plant); // Use plant in query
+      .eq('plant', plant);
 
     if (error) {
       setError(`Failed to fetch production rolls: ${error.message}`);
@@ -31,7 +30,6 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
     }
   };
 
-  // This useEffect runs when the component mounts or when machine, unit, or plant changes
   useEffect(() => {
     if (machineNumber && unitName && plant) {
       fetchProductionRolls();
@@ -40,29 +38,20 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
 
   const handleConsume = async (e) => {
     e.preventDefault();
-    if (!rollId) {
-      setError('Please enter a Roll ID.');
+    if (!rollId || !user || !plant) {
+      setError('Roll ID, user, and plant are required.');
       return;
-    }
-    if (!user) {
-      setError('You must be logged in to consume rolls.');
-      return;
-    }
-    if (!plant) {
-        setError('Error: Plant information is not available.');
-        return;
     }
 
     setMessage('');
     setError('');
 
     try {
-      // 1. Fetch the roll from pr_stock for the specific plant
       const { data: stockData, error: fetchError } = await supabase
         .from('pr_stock')
         .select('*')
         .eq('roll_id', rollId)
-        .eq('plant', plant) // Use plant in query
+        .eq('plant', plant)
         .single();
 
       if (fetchError || !stockData) {
@@ -71,12 +60,11 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
 
       const destination = `${machineNumber} - ${unitName}`;
 
-      // 2. Insert into pr_stock_movements, including the plant
       const { error: movementError } = await supabase.from('pr_stock_movements').insert([
         {
           roll_id: stockData.roll_id,
-          plant: plant, // Record plant
-          movement_type: '201', // Issue to production
+          plant: plant,
+          movement_type: '201', 
           initial_loc: stockData.bin_location,
           destination_loc: destination,
           weight: stockData.weight,
@@ -91,22 +79,19 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
         throw new Error(`Failed to record movement: ${movementError.message}`);
       }
 
-      // 3. Update the bin_location in pr_stock for the specific plant
       const { error: updateError } = await supabase
         .from('pr_stock')
         .update({ bin_location: destination })
         .eq('roll_id', rollId)
-        .eq('plant', plant); // Use plant in query
+        .eq('plant', plant);
 
       if (updateError) {
         throw new Error(`Failed to update roll location: ${updateError.message}. Manual correction may be needed.`);
       }
 
-      // 4. Refresh the production rolls list
       await fetchProductionRolls();
-
       setMessage(`Roll ${rollId} successfully moved to production at ${destination}.`);
-      setRollId(''); // Clear input for next scan
+      setRollId('');
     } catch (error) {
       setError(error.message);
     }
@@ -114,32 +99,35 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
 
   const handleCancel = async (roll) => {
     try {
-      // Find the specific 'issue' movement (type '201') that moved the roll to its current location.
+      // Backward-compatible: find the issue movement using new (destination_loc) or old (to_location) column names.
       const { data: issueMovement, error: movementError } = await supabase
         .from('pr_stock_movements')
-        .select('id, initial_loc')
+        .select('id, initial_loc, from_location') // Select both new and old source location columns
         .eq('roll_id', roll.roll_id)
-        .eq('movement_type', '201') // Specifically find the 'issue' movement
-        .eq('destination_loc', roll.bin_location) // That resulted in the current location
-        .order('created_at', { ascending: false }) // Get the most recent one
+        .eq('movement_type', '201')
+        .or(`destination_loc.eq.${roll.bin_location},to_location.eq.${roll.bin_location}`) // Check both destination columns
+        .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (movementError || !issueMovement) {
-        throw new Error(`Could not find the specific 'issue' movement to cancel for roll ${roll.roll_id}. It may have already been cancelled or returned.`);
+        throw new Error(`Could not find the specific 'issue' movement to cancel for roll ${roll.roll_id}. It may have been cancelled already.`);
       }
 
-      // Revert the bin_location in pr_stock to the initial location from the movement
+      const originalLocation = issueMovement.initial_loc || issueMovement.from_location;
+      if (!originalLocation) {
+          throw new Error(`Original location for roll ${roll.roll_id} is missing from its movement history.`);
+      }
+
       const { error: updateError } = await supabase
         .from('pr_stock')
-        .update({ bin_location: issueMovement.initial_loc })
+        .update({ bin_location: originalLocation })
         .eq('roll_id', roll.roll_id);
 
       if (updateError) {
         throw new Error(`Failed to revert stock location: ${updateError.message}`);
       }
 
-      // Delete the movement record from pr_stock_movements
       const { error: deleteError } = await supabase
         .from('pr_stock_movements')
         .delete()
@@ -149,7 +137,6 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
         throw new Error(`Failed to delete the movement history record: ${deleteError.message}.`);
       }
 
-      // Refresh the list of production rolls
       await fetchProductionRolls();
       setMessage(`Cancelled issue of roll ${roll.roll_id}.`);
     } catch (error) {
@@ -158,13 +145,11 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
   };
 
   const handleReturn = (roll) => {
-    // Navigate to the pr-return page with roll_id and bin_location as query parameters
-    router.push(`/paper-roll/pr-return?roll_id=${roll.roll_id}&bin_location=${roll.bin_location}`);
+    router.push(`/paper-roll/pr-return?roll_id=${roll.roll_id}&bin_location=${roll.bin_location}&plant=${plant}`);
   };
 
   const handleUsedUp = async (roll) => {
     try {
-      // Delete the roll from pr_stock
       const { error } = await supabase
         .from('pr_stock')
         .delete()
@@ -174,7 +159,6 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
         throw error;
       }
 
-      // Refresh the list of production rolls
       await fetchProductionRolls();
       setMessage(`Roll ${roll.roll_id} marked as used up and removed from stock.`);
     } catch (error) {
@@ -182,7 +166,6 @@ const PRIssue = ({ plant }) => { // Accept plant as a prop
     }
   };
 
-  // The component now returns only its own content, without the <Layout> wrapper
   return (
     <div>
       <h1>Issue Paper Roll</h1>

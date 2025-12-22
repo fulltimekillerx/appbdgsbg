@@ -117,14 +117,14 @@ const PRReturn = ({ plant }) => {
         }
         const newLength = newWeight / (areaDensityKgM2 * widthM);
 
-        // 1. Record the return movement with correct movement type
+        // 1. Record the return movement with correct column names
         const { error: movementError } = await supabase.from('pr_stock_movements').insert([
             {
                 roll_id: rollId,
                 plant: plant,
-                movement_type: '202', // Return from production
-                from_location: bin_location,
-                to_location: location,
+                movement_type: '202',
+                initial_loc: bin_location,
+                destination_loc: location,
                 weight: -consumedWeight,
                 diameter: returnDiameter,
                 user_id: user.user_metadata.display_name || user.email,
