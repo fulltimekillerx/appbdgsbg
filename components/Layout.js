@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useState, Children, cloneElement } from 'react';
 
 const Layout = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth() || {}; // Safer destructuring
   const [plant, setPlant] = useState('7025');
   const [openMenu, setOpenMenu] = useState(null);
 
@@ -16,20 +16,29 @@ const Layout = ({ children }) => {
   };
 
   const childrenWithProps = Children.map(children, child => {
-    return cloneElement(child, { plant });
+    // Checking if child is a valid element before cloning
+    if (child && typeof child.type === 'function') {
+        return cloneElement(child, { plant });
+    }
+    return child;
   });
 
   const menuItems = {
     "Paper Roll": [
       { href: "/paper-roll/pr-dashboard", label: "Dashboard" },
       { href: "/paper-roll/pr-stock", label: "Inventory Stock" },
+      { href: "/paper-roll/pr-issue", label: "Goods Issue" },
+      { href: "/paper-roll/pr-movement", label: "Goods Movement" },
+      { href: "/paper-roll/pr-receive", label: "Goods Receive" },
+      { href: "/paper-roll/pr-return", label: "Goods Return" },
+      { href: "/paper-roll/pr-movement-history", label: "Movement History" }, // Added new page
       { href: "/paper-roll/pr-opname-report", label: "Opname Report" },
       { href: "/paper-roll/pr-stock-opname", label: "Stock Opname" },
       { href: "/paper-roll/pr-upload-stock", label: "Upload Stock" },
     ],
     "Logistic": [
         { href: "/logistic/fg-receive", label: "Goods Receive" },
-        { href: "/logistic/fg-receivedata", label: "Goods Receive Data" },
+        { href: "/logistic/fg-stock", label: "Goods Stock Data" },
         { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule" },
         { href: "/logistic/fg-upload-delivery-schedule", label: "Upload Delivery Schedule" },
     ],
@@ -91,7 +100,7 @@ const Layout = ({ children }) => {
       <main className="main">
         <div className="header">
           <h1>WMS</h1>
-          {user && <span>Welcome, {user.user_metadata.display_name}</span>}
+          {user && <span>Welcome, {user?.user_metadata?.display_name}</span>} {/* Safer property access */}
         </div>
         <div className="content">
           {childrenWithProps}

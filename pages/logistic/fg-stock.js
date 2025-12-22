@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabase/client';
 
-const FGReceiveData = ({ plant }) => {
-  const [receiveData, setReceiveData] = useState([]);
+const FGStockData = ({ plant }) => {
+  const [stockData, setStockData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sortColumn, setSortColumn] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
 
-  const fetchReceiveData = async () => {
+  const fetchStockData = async () => {
     if (!plant) {
       // alert('Please select a plant.');
       return;
@@ -18,7 +18,7 @@ const FGReceiveData = ({ plant }) => {
     setError(null);
 
     const { data, error: fetchError } = await supabase
-      .from('fg_receive')
+      .from('fg_stock')
       .select(`
         id,
         created_at,
@@ -30,20 +30,20 @@ const FGReceiveData = ({ plant }) => {
       .eq('plant', plant);
 
     if (fetchError) {
-      setError(fetchError.message || 'Failed to fetch FG Receive data');
+      setError(fetchError.message || 'Failed to fetch FG Stock data');
     } else {
-      setReceiveData(data);
+      setStockData(data);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchReceiveData();
+    fetchStockData();
   }, [plant]);
 
   const sortedData = useMemo(() => {
-    if (receiveData) {
-      const sorted = [...receiveData].sort((a, b) => {
+    if (stockData) {
+      const sorted = [...stockData].sort((a, b) => {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
 
@@ -54,7 +54,7 @@ const FGReceiveData = ({ plant }) => {
       return sorted;
     }
     return [];
-  }, [receiveData, sortColumn, sortDirection]);
+  }, [stockData, sortColumn, sortDirection]);
 
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -74,13 +74,13 @@ const FGReceiveData = ({ plant }) => {
 
   return (
     <div>
-      <h2>FG Receive Data</h2>
-      <button onClick={fetchReceiveData} disabled={!plant}>
+      <h2>FG Stock Data</h2>
+      <button onClick={fetchStockData} disabled={!plant}>
         Refresh Data
       </button>
       {loading && <p>Loading...</p>}
       {error && <p className="error-message">{error}</p>}
-      {receiveData.length > 0 && (
+      {stockData.length > 0 && (
         <table>
           <thead>
             <tr>
@@ -106,4 +106,4 @@ const FGReceiveData = ({ plant }) => {
   );
 };
 
-export default FGReceiveData;
+export default FGStockData;

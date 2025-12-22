@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../supabase/client';
 
-const FGReceive = ({ plant }) => {
+const FGStock = ({ plant }) => {
   const { user } = useAuth();
   const [lmgNumber, setLmgNumber] = useState('');
   const [binLocation, setBinLocation] = useState('');
@@ -14,7 +14,7 @@ const FGReceive = ({ plant }) => {
     if (message) {
       const timer = setTimeout(() => {
         setMessage(null);
-      }, 5000); // Clear message after 5 seconds
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [message]);
@@ -31,7 +31,7 @@ const FGReceive = ({ plant }) => {
     }
 
     const { error: submitError } = await supabase
-      .from('fg_receive')
+      .from('fg_stock')
       .insert([
         {
           lmg_number: lmgNumber,
@@ -42,9 +42,9 @@ const FGReceive = ({ plant }) => {
       ]);
 
     if (submitError) {
-      setError(submitError.message || 'Failed to submit FG Receive data');
+      setError(submitError.message || 'Failed to submit FG Stock data');
     } else {
-      setMessage('FG Receive data submitted successfully');
+      setMessage('FG Stock data submitted successfully');
       setLmgNumber('');
       setBinLocation('');
     }
@@ -53,40 +53,10 @@ const FGReceive = ({ plant }) => {
 
   return (
     <div>
-      <h2>FG Receive</h2>
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <style jsx>{`
-        .form-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 1rem;
-        }
-        .form-group {
-          display: grid;
-          grid-template-columns: 120px 1fr;
-          align-items: center;
-          gap: 1rem;
-        }
-        label {
-          text-align: right;
-        }
-        input {
-          width: 100%;
-          padding: 0.5rem;
-          box-sizing: border-box;
-        }
-        button {
-          grid-column: 1 / -1; /* Span across all columns */
-          justify-self: center;
-          padding: 0.5rem 1rem;
-        }
-        @media (min-width: 600px) {
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
+      <h2>FG Stock</h2>
+      {message && <p className="message-success">{message}</p>}
+      {error && <p className="message-error">{error}</p>}
+      
       <form onSubmit={handleSubmit} className="form-grid">
         <div className="form-group">
           <label htmlFor="binLocation">Bin Location</label>
@@ -118,4 +88,4 @@ const FGReceive = ({ plant }) => {
   );
 };
 
-export default FGReceive;
+export default FGStock;

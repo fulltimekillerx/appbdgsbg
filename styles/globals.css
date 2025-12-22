@@ -70,7 +70,7 @@ button:hover {
   background-color: #0056b3;
 }
 
-/* Add this to your styles/globals.css file */
+/* Table Styles */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -90,10 +90,46 @@ th {
   background-color: #f2f2f2;
 }
 
+/* Form Styles */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  max-width: 600px; /* Limit form width for better readability */
+}
+
+.form-group {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.form-group label {
+  text-align: right;
+  font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form-grid button {
+  grid-column: 1 / -1;
+  justify-self: center;
+  padding: 0.5rem 1rem;
+}
+
 .error-message {
   color: red;
 }
 
+/* Responsive Styles */
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
@@ -113,5 +149,13 @@ th {
 
   .header h1 {
     margin-bottom: 10px;
+  }
+
+  .form-group {
+    grid-template-columns: 1fr; /* Stack label and input on small screens */
+  }
+
+  .form-group label {
+    text-align: left; /* Align label to the left on small screens */
   }
 }
