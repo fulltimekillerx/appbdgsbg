@@ -115,8 +115,11 @@ const PRMovementHistory = ({ plant }) => {
           style={{ marginRight: '10px', padding: '5px' }}
         >
             <option value="">All Types</option>
-            <option value="relocation">Relocation</option>
-            <option value="201">Consumption</option>
+            <option value="201">201</option>
+            <option value="202">202</option>
+            <option value="101">101</option>
+            <option value="102">102</option>
+            <option value="999">999</option>
         </select>
         <button onClick={handleFilter} style={{ padding: '5px' }}>Filter</button>
       </div>
@@ -133,6 +136,8 @@ const PRMovementHistory = ({ plant }) => {
             <th onClick={() => requestSort('initial_loc')} style={{ cursor: 'pointer' }}>Initial Location{getSortIndicator('initial_loc')}</th>
             <th onClick={() => requestSort('destination_loc')} style={{ cursor: 'pointer' }}>Destination Location{getSortIndicator('destination_loc')}</th>
             <th onClick={() => requestSort('user_id')} style={{ cursor: 'pointer' }}>User ID{getSortIndicator('user_id')}</th>
+            <th onClick={() => requestSort('diameter')} style={{ cursor: 'pointer' }}>Diameter{getSortIndicator('diameter')}</th>
+            <th onClick={() => requestSort('length')} style={{ cursor: 'pointer' }}>Length{getSortIndicator('length')}</th>
             <th onClick={() => requestSort('weight')} style={{ cursor: 'pointer' }}>Weight{getSortIndicator('weight')}</th>
           </tr>
         </thead>
@@ -145,6 +150,8 @@ const PRMovementHistory = ({ plant }) => {
               <td>{movement.initial_loc}</td>
               <td>{movement.destination_loc}</td>
               <td>{movement.user_id}</td>
+              <td>{movement.diameter}</td>
+              <td>{movement.length}</td>
               <td>{movement.weight}</td>
             </tr>
           ))}

@@ -107,15 +107,18 @@ const PRReturn = ({ plant }) => {
             throw new Error('Initial diameter is too small for calculation (must be > 10cm).');
         }
 
-        const newWeight = (numerator / denominator) * initialWt;
-        const consumedWeight = initialWt - newWeight;
+        const newWeightRaw = (numerator / denominator) * initialWt;
+        //const consumedWeight = initialWt - newWeightRaw;
 
         const areaDensityKgM2 = gsm / 1000;
         const widthM = width / 100;
         if (areaDensityKgM2 <= 0 || widthM <= 0) {
             throw new Error('GSM and Width must be positive values to calculate length.');
         }
-        const newLength = newWeight / (areaDensityKgM2 * widthM);
+        
+        const newLength = Math.ceil(newWeightRaw / (areaDensityKgM2 * widthM));
+        const newWeight = parseFloat(newWeightRaw.toFixed(2));
+
 
         // 1. Record the return movement with correct column names
         const { error: movementError } = await supabase.from('pr_stock_movements').insert([
@@ -125,7 +128,8 @@ const PRReturn = ({ plant }) => {
                 movement_type: '202',
                 initial_loc: bin_location,
                 destination_loc: location,
-                weight: -consumedWeight,
+                weight: newWeight,
+                length: newLength,
                 diameter: returnDiameter,
                 user_id: user.user_metadata.display_name || user.email,
             },
@@ -152,7 +156,7 @@ const PRReturn = ({ plant }) => {
             throw new Error(`Failed to update stock details: ${updateError.message}. Manual correction might be needed.`);
         }
 
-        setMessage(`Roll ${rollId} successfully returned to ${location}. New weight: ${newWeight.toFixed(2)}kg, New length: ${newLength.toFixed(2)}m.`);
+        setMessage(`Roll ${rollId} successfully returned to ${location}. New weight: ${newWeight}kg, New length: ${newLength}m.`);
         setTimeout(() => router.push(`/paper-roll/pr-issue?plant=${plant}`), 3000);
 
     } catch (error) {
