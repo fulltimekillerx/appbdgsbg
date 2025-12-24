@@ -43,7 +43,7 @@ const PRMovement = ({ plant }) => {
           movement_type: '999',
           initial_loc: stockData.bin_location,
           destination_loc: newLocation,
-          weight: stockData.weight,
+          weight: 0,
           diameter: stockData.diameter,
           length: stockData.length,
           prod_order_no: stockData.prod_order_no,

@@ -67,9 +67,9 @@ const PRIssue = ({ plant }) => {
           movement_type: '201', 
           initial_loc: stockData.bin_location,
           destination_loc: destination,
-          weight: stockData.weight,
-          diameter: stockData.diameter,
-          length: stockData.length,
+          weight: -stockData.weight,
+          diameter: -stockData.diameter,
+          length: -stockData.length,
           prod_order_no: stockData.prod_order_no,
           user_id: user.user_metadata.display_name || user.email,
         },
@@ -106,7 +106,7 @@ const PRIssue = ({ plant }) => {
         .eq('roll_id', roll.roll_id)
         .eq('movement_type', '201')
         .eq('destination_loc', roll.bin_location) // Check the destination column
-        .order('created_at', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(1)
         .single();
 
