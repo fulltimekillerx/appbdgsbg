@@ -38,7 +38,9 @@ const Layout = ({ children }) => {
     ],
     "Logistic": [
         { href: "/logistic/fg-receive", label: "Goods Receive" },
+        { href: "/logistic/fg-issue", label: "Goods Issue" },
         { href: "/logistic/fg-stock", label: "Goods Stock Data" },
+        { href: "/logistic/fg-movement-history", label: "Movement History" },
         { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule" },
         { href: "/logistic/fg-upload-delivery-schedule", label: "Upload Delivery Schedule" },
     ],

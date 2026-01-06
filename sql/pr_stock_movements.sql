@@ -11,6 +11,7 @@ CREATE TABLE public.pr_stock_movements (
   movement_type text,
   initial_loc text,
   destination_loc text,
+  batch text,
   weight numeric,
   diameter numeric,
   length numeric,
