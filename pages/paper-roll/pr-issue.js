@@ -14,6 +14,7 @@ const PRIssue = ({ plant }) => {
   const [error, setError] = useState('');
   const { user } = useAuth() || {};
 
+  // Fetches rolls currently at the selected production machine and unit
   const fetchProductionRolls = async () => {
     if (!plant) return;
     const destination = `${machineNumber} - ${unitName}`;
@@ -30,12 +31,14 @@ const PRIssue = ({ plant }) => {
     }
   };
 
+  // Refreshes the list of production rolls whenever the machine, unit, or plant changes
   useEffect(() => {
     if (machineNumber && unitName && plant) {
       fetchProductionRolls();
     }
   }, [machineNumber, unitName, plant]);
 
+  // Handles the consumption of a paper roll
   const handleConsume = async (e) => {
     e.preventDefault();
     if (!rollId || !user || !plant) {
@@ -47,6 +50,7 @@ const PRIssue = ({ plant }) => {
     setError('');
 
     try {
+      // Retrieve the stock data for the given roll ID and plant
       const { data: stockData, error: fetchError } = await supabase
         .from('pr_stock')
         .select('*')
@@ -60,17 +64,19 @@ const PRIssue = ({ plant }) => {
 
       const destination = `${machineNumber} - ${unitName}`;
 
+      // Create a new record in the pr_stock_movements table to log the consumption
       const { error: movementError } = await supabase.from('pr_stock_movements').insert([
         {
           roll_id: stockData.roll_id,
           plant: plant,
-          movement_type: '201', 
+          movement_type: '201', // 201 represents consumption
           initial_loc: stockData.bin_location,
           destination_loc: destination,
           weight: -stockData.weight,
           diameter: -stockData.diameter,
           length: -stockData.length,
           prod_order_no: stockData.prod_order_no,
+          batch: stockData.batch,
           user_id: user.user_metadata.display_name || user.email,
         },
       ]);
@@ -79,6 +85,7 @@ const PRIssue = ({ plant }) => {
         throw new Error(`Failed to record movement: ${movementError.message}`);
       }
 
+      // Update the bin location of the roll in the pr_stock table
       const { error: updateError } = await supabase
         .from('pr_stock')
         .update({ bin_location: destination })
@@ -97,15 +104,16 @@ const PRIssue = ({ plant }) => {
     }
   };
 
+  // Handles the cancellation of a roll issue
   const handleCancel = async (roll) => {
     try {
-      // Find the issue movement using the destination_loc column.
+      // Find the issue movement to be cancelled
       const { data: issueMovement, error: movementError } = await supabase
         .from('pr_stock_movements')
-        .select('id, initial_loc') // Select the source location column
+        .select('id, initial_loc')
         .eq('roll_id', roll.roll_id)
         .eq('movement_type', '201')
-        .eq('destination_loc', roll.bin_location) // Check the destination column
+        .eq('destination_loc', roll.bin_location)
         .order('timestamp', { ascending: false })
         .limit(1)
         .single();
@@ -119,6 +127,7 @@ const PRIssue = ({ plant }) => {
           throw new Error(`Original location for roll ${roll.roll_id} is missing from its movement history.`);
       }
 
+      // Revert the bin location of the roll in the pr_stock table
       const { error: updateError } = await supabase
         .from('pr_stock')
         .update({ bin_location: originalLocation })
@@ -128,6 +137,7 @@ const PRIssue = ({ plant }) => {
         throw new Error(`Failed to revert stock location: ${updateError.message}`);
       }
 
+      // Delete the movement record from the pr_stock_movements table
       const { error: deleteError } = await supabase
         .from('pr_stock_movements')
         .delete()

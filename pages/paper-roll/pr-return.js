@@ -131,6 +131,7 @@ const PRReturn = ({ plant }) => {
                 weight: newWeight,
                 length: newLength,
                 diameter: returnDiameter,
+                batch: 'OLD',
                 user_id: user.user_metadata.display_name || user.email,
             },
         ]);
@@ -147,6 +148,7 @@ const PRReturn = ({ plant }) => {
                 weight: newWeight,
                 diameter: returnDiameter,
                 length: newLength,
+                batch: 'OLD',
             })
             .eq('roll_id', rollId)
             .eq('plant', plant);

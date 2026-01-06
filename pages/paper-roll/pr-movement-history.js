@@ -132,6 +132,7 @@ const PRMovementHistory = ({ plant }) => {
           <tr>
             <th onClick={() => requestSort('timestamp')} style={{ cursor: 'pointer' }}>Timestamp{getSortIndicator('timestamp')}</th>
             <th onClick={() => requestSort('roll_id')} style={{ cursor: 'pointer' }}>Roll ID{getSortIndicator('roll_id')}</th>
+            <th onClick={() => requestSort('batch')} style={{ cursor: 'pointer' }}>Batch{getSortIndicator('batch')}</th>
             <th onClick={() => requestSort('movement_type')} style={{ cursor: 'pointer' }}>Movement Type{getSortIndicator('movement_type')}</th>
             <th onClick={() => requestSort('initial_loc')} style={{ cursor: 'pointer' }}>Initial Location{getSortIndicator('initial_loc')}</th>
             <th onClick={() => requestSort('destination_loc')} style={{ cursor: 'pointer' }}>Destination Location{getSortIndicator('destination_loc')}</th>
@@ -146,6 +147,7 @@ const PRMovementHistory = ({ plant }) => {
             <tr key={movement.id}>
               <td>{new Date(movement.timestamp).toLocaleString()}</td>
               <td>{movement.roll_id}</td>
+              <td>{movement.batch}</td>
               <td>{movement.movement_type}</td>
               <td>{movement.initial_loc}</td>
               <td>{movement.destination_loc}</td>
