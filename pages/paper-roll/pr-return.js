@@ -43,19 +43,41 @@ const PRReturn = ({ plant }) => {
     }
   };
 
+  const fetchOriginalLocation = async (currentRollId) => {
+    if (!currentRollId || !plant) return;
+
+    // Find the last 'issue' movement to get the original storage location.
+    const { data, error } = await supabase
+        .from('pr_stock_movements')
+        .select('initial_loc')
+        .eq('roll_id', currentRollId)
+        .eq('plant', plant)
+        .eq('movement_type', '201') // '201' for 'issue to production'
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+    if (error || !data) {
+        console.error('Original location not found. User must enter it manually.');
+        setLocation(''); // Default to empty if not found
+    } else {
+        // Set the default return location to where it was before being issued.
+        setLocation(data.initial_loc);
+    }
+  };
+
   useEffect(() => {
     if (queryRollId && plant) {
       setRollId(queryRollId);
       fetchRollData(queryRollId);
+      fetchOriginalLocation(queryRollId);
     }
-    if (bin_location) {
-        setLocation(bin_location);
-    }
-  }, [queryRollId, bin_location, plant]);
+  }, [queryRollId, plant]);
 
   const handleRollIdBlur = () => {
     if (!queryRollId && rollId) {
       fetchRollData(rollId);
+      fetchOriginalLocation(rollId);
     }
   };
 

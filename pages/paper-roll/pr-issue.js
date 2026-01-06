@@ -22,7 +22,8 @@ const PRIssue = ({ plant }) => {
       .from('pr_stock')
       .select('*')
       .eq('bin_location', destination)
-      .eq('plant', plant);
+      .eq('plant', plant)
+      .eq('batch', 'PRODUCTION');
 
     if (error) {
       setError(`Failed to fetch production rolls: ${error.message}`);
@@ -85,10 +86,10 @@ const PRIssue = ({ plant }) => {
         throw new Error(`Failed to record movement: ${movementError.message}`);
       }
 
-      // Update the bin location of the roll in the pr_stock table
+      // Update the bin location and batch of the roll in the pr_stock table
       const { error: updateError } = await supabase
         .from('pr_stock')
-        .update({ bin_location: destination })
+        .update({ bin_location: destination, batch: 'PRODUCTION' })
         .eq('roll_id', rollId)
         .eq('plant', plant);
 
@@ -110,7 +111,7 @@ const PRIssue = ({ plant }) => {
       // Find the issue movement to be cancelled
       const { data: issueMovement, error: movementError } = await supabase
         .from('pr_stock_movements')
-        .select('id, initial_loc')
+        .select('id, initial_loc, batch')
         .eq('roll_id', roll.roll_id)
         .eq('movement_type', '201')
         .eq('destination_loc', roll.bin_location)
@@ -127,10 +128,10 @@ const PRIssue = ({ plant }) => {
           throw new Error(`Original location for roll ${roll.roll_id} is missing from its movement history.`);
       }
 
-      // Revert the bin location of the roll in the pr_stock table
+      // Revert the bin location and batch of the roll in the pr_stock table
       const { error: updateError } = await supabase
         .from('pr_stock')
-        .update({ bin_location: originalLocation })
+        .update({ bin_location: originalLocation, batch: issueMovement.batch })
         .eq('roll_id', roll.roll_id);
 
       if (updateError) {
