@@ -7,6 +7,8 @@ const PRIssue = ({ plant }) => {
   const router = useRouter();
   const [machineNumber, setMachineNumber] = useState('C1');
   const [isMachineLocked, setIsMachineLocked] = useState(false);
+  const [group, setGroup] = useState('A');
+  const [isGroupLocked, setIsGroupLocked] = useState(false);
   const [unitName, setUnitName] = useState('CL');
   const [rollId, setRollId] = useState('');
   const [productionRolls, setProductionRolls] = useState([]);
@@ -14,14 +16,12 @@ const PRIssue = ({ plant }) => {
   const [error, setError] = useState('');
   const { user } = useAuth() || {};
 
-  // Fetches rolls currently at the selected production machine and unit
+  // Fetches all rolls with the 'PRODUCTION' batch status for the current plant
   const fetchProductionRolls = async () => {
     if (!plant) return;
-    const destination = `${machineNumber} - ${unitName}`;
     const { data, error } = await supabase
       .from('pr_stock')
       .select('*')
-      .eq('bin_location', destination)
       .eq('plant', plant)
       .eq('batch', 'PRODUCTION');
 
@@ -32,12 +32,12 @@ const PRIssue = ({ plant }) => {
     }
   };
 
-  // Refreshes the list of production rolls whenever the machine, unit, or plant changes
+  // Refreshes the list of production rolls whenever the component loads or the plant changes
   useEffect(() => {
-    if (machineNumber && unitName && plant) {
+    if (plant) {
       fetchProductionRolls();
     }
-  }, [machineNumber, unitName, plant]);
+  }, [plant]);
 
   // Handles the consumption of a paper roll
   const handleConsume = async (e) => {
@@ -63,7 +63,7 @@ const PRIssue = ({ plant }) => {
         throw new Error(`Roll ID ${rollId} not found in plant ${plant}.`);
       }
 
-      const destination = `${machineNumber} - ${unitName}`;
+      const destination = `${machineNumber} - ${unitName} - ${group}`;
 
       // Create a new record in the pr_stock_movements table to log the consumption
       const { error: movementError } = await supabase.from('pr_stock_movements').insert([
@@ -210,6 +210,33 @@ const PRIssue = ({ plant }) => {
         </div>
 
         <div className="form-group">
+          <label htmlFor="group">Group</label>
+          <div className="input-group">
+            <select
+              id="group"
+              className="form-control"
+              value={group}
+              onChange={(e) => setGroup(e.target.value)}
+              disabled={isGroupLocked}
+            >
+              <option>A</option>
+              <option>B</option>
+              <option>C</option>
+              <option>D</option>
+            </select>
+            <div className="input-group-append">
+              <button
+                className={`btn ${isGroupLocked ? 'btn-success' : 'btn-outline-secondary'}`}
+                type="button"
+                onClick={() => setIsGroupLocked(!isGroupLocked)}
+              >
+                {isGroupLocked ? 'Unlock' : 'Lock'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="form-group">
           <label htmlFor="unitName">Unit Name</label>
           <select
             id="unitName"
@@ -275,7 +302,7 @@ const PRIssue = ({ plant }) => {
             ))
           ) : (
             <tr>
-              <td colSpan="7" className="text-center">No rolls found at this production location.</td>
+              <td colSpan="7" className="text-center">No rolls found in production.</td>
             </tr>
           )}
         </tbody>
