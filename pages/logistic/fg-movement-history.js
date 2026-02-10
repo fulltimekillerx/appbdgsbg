@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 
-const PRMovementHistory = ({ plant }) => {
+const FGMovementHistory = ({ plant }) => {
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,7 +21,7 @@ const PRMovementHistory = ({ plant }) => {
 
     try {
       let query = supabase
-        .from('pr_stock_movements')
+        .from('fg_stock_movements')
         .select('*')
         .eq('plant', plant);
 
@@ -87,7 +87,7 @@ const PRMovementHistory = ({ plant }) => {
 
   return (
     <div>
-      <h1>Paper Roll Movement History</h1>
+      <h1>Finished Goods Movement History</h1>
       
       <div style={{ marginBottom: '20px' }}>
         <input
@@ -131,30 +131,29 @@ const PRMovementHistory = ({ plant }) => {
         <thead>
           <tr>
             <th onClick={() => requestSort('timestamp')} style={{ cursor: 'pointer' }}>Timestamp{getSortIndicator('timestamp')}</th>
-            <th onClick={() => requestSort('roll_id')} style={{ cursor: 'pointer' }}>Roll ID{getSortIndicator('roll_id')}</th>
+            <th onClick={() => requestSort('lmg_number')} style={{ cursor: 'pointer' }}>LMG Number{getSortIndicator('lmg_number')}</th>
+            <th onClick={() => requestSort('fg_code')} style={{ cursor: 'pointer' }}>FG Code{getSortIndicator('fg_code')}</th>
             <th onClick={() => requestSort('batch')} style={{ cursor: 'pointer' }}>Batch{getSortIndicator('batch')}</th>
             <th onClick={() => requestSort('movement_type')} style={{ cursor: 'pointer' }}>Movement Type{getSortIndicator('movement_type')}</th>
             <th onClick={() => requestSort('initial_loc')} style={{ cursor: 'pointer' }}>Initial Location{getSortIndicator('initial_loc')}</th>
             <th onClick={() => requestSort('destination_loc')} style={{ cursor: 'pointer' }}>Destination Location{getSortIndicator('destination_loc')}</th>
             <th onClick={() => requestSort('user_id')} style={{ cursor: 'pointer' }}>User ID{getSortIndicator('user_id')}</th>
-            <th onClick={() => requestSort('diameter')} style={{ cursor: 'pointer' }}>Diameter{getSortIndicator('diameter')}</th>
-            <th onClick={() => requestSort('length')} style={{ cursor: 'pointer' }}>Length{getSortIndicator('length')}</th>
-            <th onClick={() => requestSort('weight')} style={{ cursor: 'pointer' }}>Weight{getSortIndicator('weight')}</th>
+            <th onClick={() => requestSort('quantity')} style={{ cursor: 'pointer' }}>Quantity{getSortIndicator('quantity')}</th>
           </tr>
         </thead>
         <tbody>
           {movements.map(movement => (
             <tr key={movement.id}>
               <td>{new Date(movement.timestamp).toLocaleString()}</td>
-              <td>{movement.roll_id}</td>
+              <td>{movement.lmg_number}</td>
+              <td>{movement.fg_code}</td>
+              <td>{movement.prod_order_no}</td>
               <td>{movement.batch}</td>
               <td>{movement.movement_type}</td>
               <td>{movement.initial_loc}</td>
               <td>{movement.destination_loc}</td>
               <td>{movement.user_id}</td>
-              <td>{movement.diameter}</td>
-              <td>{movement.length}</td>
-              <td>{movement.weight}</td>
+              <td>{movement.quantity}</td>
             </tr>
           ))}
         </tbody>
@@ -163,4 +162,4 @@ const PRMovementHistory = ({ plant }) => {
   );
 };
 
-export default PRMovementHistory;
+export default FGMovementHistory;

@@ -1,31 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../supabase/client';
 
-export default function Dashboard({ plant }) {
-  const [summary, setSummary] = useState([]);
+export default function AnalysisPage({ plant }) {
+  const [paperRolls, setPaperRolls] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchSummary = async () => {
-      if (!plant) return;
-
+    const fetchPaperRolls = async () => {
+      if (!plant) {
+        setPaperRolls([]);
+        setIsLoading(false);
+        return;
+      }
       try {
-        setLoading(true);
+        setIsLoading(true);
+        setError(null);
         let allRolls = [];
         let page = 0;
         const pageSize = 1000;
         let lastPage = false;
 
         while (!lastPage) {
-          const { data, error } = await supabase
+          const { data, error: fetchError } = await supabase
             .from('pr_stock')
-            .select('batch, weight, goods_receive_date')
+            .select('kind, gsm, width, weight, goods_receive_date')
             .eq('plant', plant)
             .range(page * pageSize, (page + 1) * pageSize - 1);
 
-          if (error) {
-            throw error;
+          if (fetchError) {
+            throw fetchError;
           }
 
           if (data) {
@@ -35,98 +41,234 @@ export default function Dashboard({ plant }) {
           if (!data || data.length < pageSize) {
             lastPage = true;
           }
-          
           page++;
         }
-        
-        const batchSummary = allRolls.reduce((acc, roll) => {
-          const batch = roll.batch || 'N/A';
-          if (!acc[batch]) {
-            acc[batch] = {
-              totalRolls: 0,
-              totalWeight: 0,
-              totalAge: 0,
-              countForAge: 0,
-            };
-          }
 
-          acc[batch].totalRolls += 1;
-          acc[batch].totalWeight += roll.weight;
-          
-          if (roll.goods_receive_date) {
-            const creationDate = new Date(roll.goods_receive_date);
-            const ageInDays = (new Date() - creationDate) / (1000 * 60 * 60 * 24);
-            acc[batch].totalAge += ageInDays;
-            acc[batch].countForAge += 1;
-          }
-          
-          return acc;
-        }, {});
-
-        const summaryArray = Object.keys(batchSummary).map(batch => ({
-          batch,
-          totalRolls: batchSummary[batch].totalRolls,
-          totalWeight: batchSummary[batch].totalWeight,
-          averageAge: batchSummary[batch].countForAge > 0 
-            ? batchSummary[batch].totalAge / batchSummary[batch].countForAge
-            : 0,
+        const processedRolls = allRolls.map(roll => ({
+          ...roll,
+          aging: (new Date() - new Date(roll.goods_receive_date)) / (1000 * 60 * 60 * 24),
         }));
 
-        setSummary(summaryArray);
+        setPaperRolls(processedRolls);
+
       } catch (error) {
-        console.error('Error fetching summary:', error);
+        console.error('Error fetching paper rolls for plant:', plant, error);
         setError(error.message);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchSummary();
+    fetchPaperRolls();
   }, [plant]);
+
+  // State for expanded rows
+  const [expandedAging, setExpandedAging] = useState(new Set());
+  const [expandedKinds, setExpandedKinds] = useState(new Set());
+  const [expandedGsms, setExpandedGsms] = useState(new Set());
+
+  const toggleAging = (key) => {
+    setExpandedAging(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleKind = (key) => {
+    setExpandedKinds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+ 
+  const toggleGsm = (key) => {
+    setExpandedGsms(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  const handleWidthClick = () => {
+    router.push('/inventory');
+  };
+
+  const nestedStats = useMemo(() => {
+    if (isLoading || !paperRolls) {
+      return {};
+    }
+
+    const stats = {
+      under3: { rolls: 0, weight: 0, kinds: {} },
+      '3to6': { rolls: 0, weight: 0, kinds: {} },
+      '6to12': { rolls: 0, weight: 0, kinds: {} },
+      over12: { rolls: 0, weight: 0, kinds: {} },
+    };
+
+    paperRolls.forEach(roll => {
+      if (!Number.isFinite(roll.aging)) {
+        return;
+      }
+
+      let categoryKey;
+      const agingDays = roll.aging;
+      if (agingDays < 90) categoryKey = 'under3';
+      else if (agingDays < 180) categoryKey = '3to6';
+      else if (agingDays < 365) categoryKey = '6to12';
+      else categoryKey = 'over12';
+
+      const kind = roll.kind || 'Unknown';
+      const gsm = String(roll.gsm || 'N/A');
+      const width = String(roll.width || 'N/A');
+      const rollCount = 1;
+      const weight = roll.weight || 0;
+
+      const category = stats[categoryKey];
+      category.rolls += rollCount;
+      category.weight += weight;
+
+      if (!category.kinds[kind]) {
+        category.kinds[kind] = { rolls: 0, weight: 0, gsms: {} };
+      }
+      const kindStat = category.kinds[kind];
+      kindStat.rolls += rollCount;
+      kindStat.weight += weight;
+     
+      if (!kindStat.gsms[gsm]) {
+        kindStat.gsms[gsm] = { rolls: 0, weight: 0, widths: {} };
+      }
+      const gsmStat = kindStat.gsms[gsm];
+      gsmStat.rolls += rollCount;
+      gsmStat.weight += weight;
+
+      if (!gsmStat.widths[width]) {
+        gsmStat.widths[width] = { rolls: 0, weight: 0 };
+      }
+      const widthStat = gsmStat.widths[width];
+      widthStat.rolls += rollCount;
+      widthStat.weight += weight;
+    });
+
+    return stats;
+  }, [paperRolls, isLoading]);
+
+  const agingData = [
+    { key: 'under3', category: 'Under 3 Months', stats: nestedStats.under3 },
+    { key: '3to6', category: '3-6 Months', stats: nestedStats['3to6'] },
+    { key: '6to12', category: '6-12 Months', stats: nestedStats['6to12'] },
+    { key: 'over12', category: 'Over 12 Months', stats: nestedStats.over12 },
+  ];
 
   return (
     <div>
-      <h1>Paper Roll Dashboard for {plant}</h1>
-      {loading ? (
-        <p>Loading...</p>
-      ) : error ? (
-        <p style={{ color: 'red' }}>Error: {error}</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Batch</th>
-              <th>Total Rolls</th>
-              <th>Total Weight (kg)</th>
-              <th>Average Aging (days)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.map((item) => (
-              <tr key={item.batch}>
-                <td>{item.batch}</td>
-                <td>{item.totalRolls}</td>
-                <td>{item.totalWeight.toFixed(2)}</td>
-                <td>{item.averageAge.toFixed(2)}</td>
+      <h1>Stock Age Summary</h1>
+      {error && <p>Error: {error}</p>}
+      <div>
+        <div>
+          <p>
+            A detailed table of the number of rolls and weight by age category. Click a row to see details.
+          </p>
+        </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Details</th>
+                <th>Number of Rolls</th>
+                <th>Total Weight (kg)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <style jsx>{`
-        table, th, td {
-          border: 1px solid black;
-          border-collapse: collapse;
-          padding: 8px;
-        }
-        table {
-          width: 100%;
-          margin-top: 1rem;
-        }
-        th {
-          background-color: #f2f2f2;
-        }
-      `}</style>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="3">Loading...</td>
+                </tr>
+              ) : (
+                agingData.map(agingItem => (
+                  <React.Fragment key={agingItem.key}>
+                    <tr onClick={() => toggleAging(agingItem.key)}>
+                      <td>
+                        <span>
+                          {expandedAging.has(agingItem.key) ? '▼' : '▶'}
+                        </span>
+                        {agingItem.category}
+                      </td>
+                      <td>
+                        {agingItem.stats.rolls.toLocaleString()}
+                      </td>
+                      <td>
+                        {agingItem.stats.weight.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </td>
+                    </tr>
+                    {expandedAging.has(agingItem.key) && Object.entries(agingItem.stats.kinds).sort(([,a], [,b]) => b.weight - a.weight).map(([kindName, kindStats]) => {
+                      const kindKey = `${agingItem.key}-${kindName}`;
+                      const isKindExpanded = expandedKinds.has(kindKey);
+                      return (
+                        <React.Fragment key={kindKey}>
+                          <tr onClick={() => toggleKind(kindKey)}>
+                            <td style={{ paddingLeft: '2rem' }}>
+                              <span>
+                                {isKindExpanded ? '▼' : '▶'}
+                              </span>
+                              {kindName}
+                            </td>
+                            <td>{kindStats.rolls.toLocaleString()}</td>
+                            <td>{kindStats.weight.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          </tr>
+                          {isKindExpanded && Object.entries(kindStats.gsms).sort(([gsmA], [gsmB]) => Number(gsmB) - Number(gsmA)).map(([gsmValue, gsmStats]) => {
+                            const gsmKey = `${kindKey}-${gsmValue}`;
+                            const isGsmExpanded = expandedGsms.has(gsmKey);
+                            return (
+                              <React.Fragment key={gsmKey}>
+                                <tr onClick={() => toggleGsm(gsmKey)}>
+                                  <td style={{ paddingLeft: '4rem' }}>
+                                    <span>
+                                      {isGsmExpanded ? '▼' : '▶'}
+                                    </span>
+                                    GSM: {gsmValue}
+                                  </td>
+                                  <td>{gsmStats.rolls.toLocaleString()}</td>
+                                  <td>{gsmStats.weight.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                </tr>
+                                {isGsmExpanded && Object.entries(gsmStats.widths).sort(([widthA], [widthB]) => Number(widthB) - Number(widthA)).map(([widthValue, widthStats]) => (
+                                  <tr
+                                    key={`${gsmKey}-${widthValue}`}
+                                    onClick={handleWidthClick}
+                                  >
+                                    <td style={{ paddingLeft: '6rem' }}>
+                                      <span>Width: {widthValue}</span>
+                                    </td>
+                                    <td>{widthStats.rolls.toLocaleString()}</td>
+                                    <td>{widthStats.weight.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                  </tr>
+                                ))}
+                              </React.Fragment>
+                            )
+                          })}
+                        </React.Fragment>
+                      )
+                    })}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -10,6 +10,8 @@ export default function Inventory({ plant }) {
   const [kindAndGsmSearch, setKindAndGsmSearch] = useState('');
   const [widthSearch, setWidthSearch] = useState('');
   const [batchSearch, setBatchSearch] = useState('');
+  const [rollIdSearch, setRollIdSearch] = useState('');
+  const [binLocationSearch, setBinLocationSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'goods_receive_date', direction: 'ascending' });
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,6 +59,8 @@ export default function Inventory({ plant }) {
       const gsm = roll.gsm ? roll.gsm.toString() : '';
       const width = roll.width ? roll.width.toString() : '';
       const batch = roll.batch || '';
+      const rollId = roll.roll_id || '';
+      const binLocation = roll.bin_location || '';
       
       const searchTerm = kindAndGsmSearch.toLowerCase();
       const searchKind = searchTerm.replace(/[^a-z]/gi, '');
@@ -69,7 +73,9 @@ export default function Inventory({ plant }) {
         kindMatch &&
         gsmMatch &&
         width.toLowerCase().includes(widthSearch.toLowerCase()) &&
-        batch.toLowerCase().includes(batchSearch.toLowerCase())
+        batch.toLowerCase().includes(batchSearch.toLowerCase()) &&
+        rollId.toLowerCase().includes(rollIdSearch.toLowerCase()) &&
+        binLocation.toLowerCase().includes(binLocationSearch.toLowerCase())
       );
     });
 
@@ -104,7 +110,7 @@ export default function Inventory({ plant }) {
     }
 
     return filtered;
-  }, [rolls, kindAndGsmSearch, widthSearch, batchSearch, sortConfig]);
+  }, [rolls, kindAndGsmSearch, widthSearch, batchSearch, rollIdSearch, binLocationSearch, sortConfig]);
 
   const totalPages = Math.ceil(sortedAndFilteredRolls.length / ITEMS_PER_PAGE);
 
@@ -137,6 +143,20 @@ export default function Inventory({ plant }) {
     <div>
       <h1>Inventory</h1>
       <div style={{ marginBottom: '20px' }}>
+        <input
+          type="text"
+          placeholder="Search by Roll ID"
+          value={rollIdSearch}
+          onChange={e => {setRollIdSearch(e.target.value); setCurrentPage(1);}}
+          style={{ marginRight: '10px', padding: '5px' }}
+        />
+        <input
+          type="text"
+          placeholder="Search by Bin Location"
+          value={binLocationSearch}
+          onChange={e => {setBinLocationSearch(e.target.value); setCurrentPage(1);}}
+          style={{ marginRight: '10px', padding: '5px' }}
+        />
         <input
           type="text"
           placeholder="Search by Kind or GSM"
