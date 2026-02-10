@@ -26,7 +26,6 @@ const Layout = ({ children }) => {
   const menuItems = {
     "Paper Roll": [
       { href: "/paper-roll/pr-dashboard", label: "Dashboard" },
-      { href: "/paper-roll/pr-dashboard2", label: "Dashboard2" },
       { href: "/paper-roll/pr-stock", label: "Inventory Stock" },
       { href: "/paper-roll/pr-issue", label: "Goods Issue" },
       { href: "/paper-roll/pr-movement", label: "Goods Movement" },
