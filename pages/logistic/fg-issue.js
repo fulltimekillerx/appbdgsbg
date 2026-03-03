@@ -1,265 +1,197 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { supabase } from '../../supabase/client';
-import { useAuth } from '../../hooks/useAuth';
 
-const FGIssue = ({ plant }) => {
-  const router = useRouter();
-  const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().split('T')[0]);
-  const [schedules, setSchedules] = useState([]);
-  const [selectedSchedule, setSelectedSchedule] = useState('');
-  const [lmgNumber, setLmgNumber] = useState('');
-  const [issuedPallets, setIssuedPallets] = useState([]);
-  const [message, setMessage] = useState('');
+const FGMANLISSUE = ({ session }) => {
+  const [truckNo, setTruckNo] = useState('');
+  const [soNumber, setSoNumber] = useState('');
+  const [soItem, setSoItem] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [loadingData, setLoadingData] = useState({});
   const [error, setError] = useState('');
-  const { user } = useAuth() || {};
+  const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    const fetchSchedules = async () => {
-      if (!deliveryDate || !plant) return;
+  const plant = session?.user?.user_metadata?.plant;
+
+  const fetchLoadingData = async () => {
+    if (!plant) return;
+
+    try {
       const { data, error } = await supabase
-        .from('fg_delivery_schedule')
+        .from('fg_loading')
         .select('*')
-        .eq('delivery_date', deliveryDate)
         .eq('plant', plant);
-      if (error) {
-        setError(`Failed to fetch schedules: ${error.message}`);
-      } else {
-        setSchedules(data);
-      }
-    };
-    fetchSchedules();
-  }, [deliveryDate, plant]);
+
+      if (error) throw error;
+
+      const groupedByTruck = data.reduce((acc, item) => {
+        if (!acc[item.truck_no]) {
+          acc[item.truck_no] = [];
+        }
+        acc[item.truck_no].push(item);
+        return acc;
+      }, {});
+
+      setLoadingData(groupedByTruck);
+    } catch (error) {
+      setError(`Error fetching loading data: ${error.message}`);
+    }
+  };
 
   useEffect(() => {
-    const fetchIssuedPallets = async () => {
-      if (!selectedSchedule) {
-        setIssuedPallets([]);
-        return;
-      }
-      const schedule = JSON.parse(selectedSchedule);
-      const { data, error } = await supabase
-        .from('fg_stock_movements')
-        .select('lmg_number, destination_loc')
-        .eq('so_number', schedule.so_number)
-        .eq('sales_item', schedule.sales_item)
-        .eq('movement_type', '201');
+    fetchLoadingData();
+    const subscription = supabase
+      .from('fg_loading')
+      .on('*', () => fetchLoadingData())
+      .subscribe();
 
-      if (error) {
-        setError(`Failed to fetch issued pallets: ${error.message}`);
-      } else {
-        setIssuedPallets(data);
-      }
+    return () => {
+      supabase.removeSubscription(subscription);
     };
-    fetchIssuedPallets();
-  }, [selectedSchedule]);
+  }, [plant]);
 
-  const handleIssue = async (e) => {
+  const handleAddItem = async (e) => {
     e.preventDefault();
-    if (!lmgNumber || !user || !plant || !selectedSchedule) {
-      setError('LMG Number, user, plant, and a selected schedule are required.');
+    setError('');
+    setSuccess('');
+
+    if (!truckNo || !soNumber || !soItem || !quantity) {
+      setError('All fields are required.');
       return;
     }
 
-    setMessage('');
-    setError('');
-
     try {
-      const schedule = JSON.parse(selectedSchedule);
-      const { data: stockData, error: fetchError } = await supabase
-        .from('fg_stock')
-        .select('*')
-        .eq('lmg_number', lmgNumber)
-        .eq('plant', plant)
-        .single();
-
-      if (fetchError || !stockData) {
-        throw new Error(`LMG Number ${lmgNumber} not found in plant ${plant}.`);
-      }
-
-      const destination = `TRUCK_LOADING - ${schedule.ship_to_party}`;
-
-      const { error: movementError } = await supabase.from('fg_stock_movements').insert([
+      const { error } = await supabase.from('fg_loading').insert([
         {
-          lmg_number: stockData.lmg_number,
-          plant: plant,
-          movement_type: '201',
-          so_number: schedule.so_number,
-          sales_item: schedule.sales_item,
-          initial_loc: stockData.bin_location,
-          destination_loc: destination,
-          user_id: user.user_metadata.display_name || user.email,
+          truck_no: truckNo,
+          so_number: soNumber,
+          so_item: soItem,
+          quantity: parseInt(quantity, 10),
+          plant,
         },
       ]);
 
-      if (movementError) {
-        throw new Error(`Failed to record movement: ${movementError.message}`);
-      }
+      if (error) throw error;
 
-      const { error: updateError } = await supabase
-        .from('fg_stock')
-        .update({ bin_location: destination })
-        .eq('lmg_number', lmgNumber)
-        .eq('plant', plant);
-
-      if (updateError) {
-        throw new Error(`Failed to update pallet location: ${updateError.message}. Manual correction may be needed.`);
-      }
-
-      setLmgNumber('');
-      await refetchIssuedPallets();
-      setMessage(`Pallet ${lmgNumber} successfully issued for delivery to ${schedule.ship_to_party}.`);
+      setSuccess('Item added to truck successfully.');
+      setSoNumber('');
+      setSoItem('');
+      setQuantity('');
     } catch (error) {
-      setError(error.message);
+      setError(`Error adding item: ${error.message}`);
     }
   };
 
-  const handleCancel = async (lmg_number) => {
+  const handleFinalizeShipment = async (truckNoToFinalize) => {
+    setError('');
+    setSuccess('');
+
     try {
-        const { data: movementToCancel, error: movementError } = await supabase
-            .from('fg_stock_movements')
-            .select('id, initial_loc')
-            .eq('lmg_number', lmg_number)
-            .eq('movement_type', '201')
-            .order('timestamp', { ascending: false })
-            .limit(1)
-            .single();
+      const { data: itemsToMove, error: fetchError } = await supabase
+        .from('fg_loading')
+        .select('*')
+        .eq('truck_no', truckNoToFinalize);
 
-        if (movementError || !movementToCancel) {
-            throw new Error(`No issue movement found for pallet ${lmg_number} to cancel.`);
-        }
+      if (fetchError) throw fetchError;
 
-        const { error: updateError } = await supabase
-            .from('fg_stock')
-            .update({ bin_location: movementToCancel.initial_loc })
-            .eq('lmg_number', lmg_number);
+      const stockMovements = itemsToMove.map(item => ({
+        ...item,
+        movement_type: '601',
+        id: undefined, // Let the new table generate its own ID
+        created_at: undefined, // Let the new table set the timestamp
+      }));
 
-        if (updateError) {
-            throw new Error(`Failed to revert pallet location: ${updateError.message}`);
-        }
+      const { error: insertError } = await supabase
+        .from('fg_stock_movements')
+        .insert(stockMovements);
 
-        const { error: deleteError } = await supabase
-            .from('fg_stock_movements')
-            .delete()
-            .eq('id', movementToCancel.id);
+      if (insertError) throw insertError;
 
-        if (deleteError) {
-            // Revert the stock location if the movement deletion fails
-            await supabase
-                .from('fg_stock')
-                .update({ bin_location: movementToCancel.destination_loc })
-                .eq('lmg_number', lmg_number);
-            throw new Error(`Failed to delete movement record: ${deleteError.message}`);
-        }
+      const { error: deleteError } = await supabase
+        .from('fg_loading')
+        .delete()
+        .eq('truck_no', truckNoToFinalize);
 
-        await refetchIssuedPallets();
-        setMessage(`Issuance of pallet ${lmg_number} has been cancelled.`);
+      if (deleteError) throw deleteError;
+
+      setSuccess(`Shipment for truck ${truckNoToFinalize} finalized.`);
     } catch (error) {
-        setError(`Error cancelling issue: ${error.message}`);
+      setError(`Error finalizing shipment: ${error.message}`);
     }
   };
-
-  const refetchIssuedPallets = async () => {
-    if (!selectedSchedule) return;
-    const schedule = JSON.parse(selectedSchedule);
-    const { data, error } = await supabase
-      .from('fg_stock_movements')
-      .select('lmg_number, destination_loc')
-      .eq('so_number', schedule.so_number)
-      .eq('sales_item', schedule.sales_item)
-      .eq('movement_type', '201');
-
-    if (error) {
-      setError(`Failed to fetch issued pallets: ${error.message}`);
-    } else {
-      setIssuedPallets(data);
-    }
-  }
 
   return (
-    <div>
-      <h1>Issue Finished Good for Delivery</h1>
-      {message && <div className="alert alert-success">{message}</div>}
+    <div className="container">
+      <h2>FG Manual Issue - Loading Dock</h2>
+      
       {error && <div className="alert alert-danger">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
 
-      <div className="form-group">
-        <label htmlFor="deliveryDate">Delivery Date</label>
-        <input
-          type="date"
-          id="deliveryDate"
-          className="form-control"
-          value={deliveryDate}
-          onChange={(e) => setDeliveryDate(e.target.value)}
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="scheduleSelect">Select Delivery Schedule</label>
-        <select
-          id="scheduleSelect"
-          className="form-control"
-          value={selectedSchedule}
-          onChange={(e) => setSelectedSchedule(e.target.value)}
-          disabled={!schedules.length}
-        >
-          <option value="">-- Select a Schedule --</option>
-          {schedules.map(s => (
-            <option key={s.id} value={JSON.stringify(s)}>
-              {s.so_number}/{s.sales_item} - {s.ship_to_party} ({s.qty} {s.uom})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedSchedule && (
-        <form onSubmit={handleIssue}>
-          <div className="form-group">
-            <label htmlFor="lmgNumber">Scan LMG Number</label>
-            <input
-              type="text"
-              id="lmgNumber"
-              className="form-control"
-              value={lmgNumber}
-              onChange={(e) => setLmgNumber(e.target.value)}
-              placeholder="Scan LMG barcode to issue"
-              required
-            />
+      <form onSubmit={handleAddItem} className="card mb-4">
+        <div className="card-header">Add Item to Truck</div>
+        <div className="card-body">
+          <div className="row">
+            <div className="col-md-3">
+              <input type="text" className="form-control" placeholder="Truck No." value={truckNo} onChange={e => setTruckNo(e.target.value)} />
+            </div>
+            <div className="col-md-3">
+              <input type="text" className="form-control" placeholder="SO Number" value={soNumber} onChange={e => setSoNumber(e.target.value)} />
+            </div>
+            <div className="col-md-2">
+              <input type="text" className="form-control" placeholder="SO Item" value={soItem} onChange={e => setSoItem(e.target.value)} />
+            </div>
+            <div className="col-md-2">
+              <input type="number" className="form-control" placeholder="Quantity" value={quantity} onChange={e => setQuantity(e.target.value)} />
+            </div>
+            <div className="col-md-2">
+              <button type="submit" className="btn btn-primary w-100">Add Item</button>
+            </div>
           </div>
-          <button type="submit" className="btn btn-primary">
-            Issue Pallet
-          </button>
-        </form>
-      )}
+        </div>
+      </form>
 
-      <h2 className="mt-5">Issued Pallets for this Schedule</h2>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>LMG Number</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {issuedPallets.length > 0 ? (
-            issuedPallets.map((pallet, index) => (
-              <tr key={index}>
-                <td>{pallet.lmg_number}</td>
-                <td>{pallet.destination_loc}</td>
-                <td>
-                  <button className="btn btn-sm btn-warning" onClick={() => handleCancel(pallet.lmg_number)}>Cancel</button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="3" className="text-center">No pallets issued for this schedule yet.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <h3>Live Loading View</h3>
+      {Object.keys(loadingData).length > 0 ? (
+        Object.entries(loadingData).map(([truck, items]) => (
+          <div key={truck} className="card mb-3">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h4>Truck: {truck}</h4>
+              <button className="btn btn-success" onClick={() => handleFinalizeShipment(truck)}>Finalize & Issue Shipment</button>
+            </div>
+            <div className="card-body">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>SO Number</th>
+                    <th>SO Item</th>
+                    <th>Total Quantity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.reduce((acc, item) => {
+                      const existing = acc.find(i => i.so_number === item.so_number && i.so_item === item.so_item);
+                      if (existing) {
+                        existing.quantity += item.quantity;
+                      } else {
+                        acc.push({ ...item });
+                      }
+                      return acc;
+                    }, []).map(item => (
+                    <tr key={`${item.so_number}-${item.so_item}`}>
+                      <td>{item.so_number}</td>
+                      <td>{item.so_item}</td>
+                      <td>{item.quantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      ) : (
+        <p>No trucks are currently being loaded.</p>
+      )}
     </div>
   );
 };
 
-export default FGIssue;
+export default FGMANLISSUE;

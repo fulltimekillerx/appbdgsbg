@@ -9,6 +9,7 @@ CREATE TABLE public.fg_stock (
   created_at timestamptz NOT NULL DEFAULT now(),
   lmg_number text NOT NULL,
   so_number text,
+  so_item text,
   bin_location text NOT NULL,
   user_id uuid REFERENCES auth.users(id),
   plant text NOT NULL,

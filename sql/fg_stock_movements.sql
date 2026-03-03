@@ -10,7 +10,7 @@ CREATE TABLE public.pr_stock_movements (
   plant text, -- Added to specify which plant the movement belongs to
   movement_type text,
   so_number text,
-  sales_item text,
+  so_item text,
   initial_loc text,
   destination_loc text,
   timestamp timestamptz DEFAULT now(),
