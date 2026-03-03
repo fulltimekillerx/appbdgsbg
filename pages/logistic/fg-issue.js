@@ -41,7 +41,7 @@ const FGIssue = ({ plant }) => {
       const { data, error } = await supabase
         .from('fg_stock_movements')
         .select('lmg_number, destination_loc')
-        .eq('sales_no', schedule.sales_no)
+        .eq('so_number', schedule.so_number)
         .eq('sales_item', schedule.sales_item)
         .eq('movement_type', '201');
 
@@ -84,7 +84,7 @@ const FGIssue = ({ plant }) => {
           lmg_number: stockData.lmg_number,
           plant: plant,
           movement_type: '201',
-          sales_no: schedule.sales_no,
+          so_number: schedule.so_number,
           sales_item: schedule.sales_item,
           initial_loc: stockData.bin_location,
           destination_loc: destination,
@@ -165,7 +165,7 @@ const FGIssue = ({ plant }) => {
     const { data, error } = await supabase
       .from('fg_stock_movements')
       .select('lmg_number, destination_loc')
-      .eq('sales_no', schedule.sales_no)
+      .eq('so_number', schedule.so_number)
       .eq('sales_item', schedule.sales_item)
       .eq('movement_type', '201');
 
@@ -205,7 +205,7 @@ const FGIssue = ({ plant }) => {
           <option value="">-- Select a Schedule --</option>
           {schedules.map(s => (
             <option key={s.id} value={JSON.stringify(s)}>
-              {s.sales_no}/{s.sales_item} - {s.ship_to_party} ({s.qty} {s.uom})
+              {s.so_number}/{s.sales_item} - {s.ship_to_party} ({s.qty} {s.uom})
             </option>
           ))}
         </select>

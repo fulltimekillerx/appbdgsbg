@@ -110,7 +110,7 @@ const DeliveryScheduleData = ({ plant }) => {
         <table>
           <thead>
             <tr>
-              <th onClick={() => handleSort('sales_no')}>Sales No{getSortIndicator('sales_no')}</th>
+              <th onClick={() => handleSort('so_number')}>SO Number{getSortIndicator('so_number')}</th>
               <th onClick={() => handleSort('sales_item')}>Sales Item{getSortIndicator('sales_item')}</th>
               <th onClick={() => handleSort('customer_name')}>Customer Name{getSortIndicator('customer_name')}</th>
               <th onClick={() => handleSort('print_design')}>Print Design{getSortIndicator('print_design')}</th>
@@ -122,7 +122,7 @@ const DeliveryScheduleData = ({ plant }) => {
           <tbody>
             {sortedData.map((item) => (
               <tr key={item.id}>
-                <td>{item.sales_no}</td>
+                <td>{item.so_number}</td>
                 <td>{item.sales_item}</td>
                 <td>{item.customer_name}</td>
                 <td>{item.print_design}</td>

@@ -9,13 +9,15 @@ CREATE TABLE public.pr_stock_movements (
   lmg_number text NOT NULL,
   plant text, -- Added to specify which plant the movement belongs to
   movement_type text,
-  sales_no text,
+  so_number text,
   sales_item text,
   initial_loc text,
   destination_loc text,
   timestamp timestamptz DEFAULT now(),
-  prod_order_no text,
+  quantity integer,
   user_id text,
+  delivery_schedule_id bigint,
+  truck_no text,
   CONSTRAINT pr_stock_movements_pkey PRIMARY KEY (id)
 );
 

@@ -69,20 +69,20 @@ const UploadDeliverySchedule = ({ plant }) => {
         const currentErrorDetails = [];
         const dataToInsert = results.data.map((row, index) => {
           const csvRowNumber = index + 2;
-          const salesNo = row['Sales No'] ? String(row['Sales No']).trim() : null;
+          const soNumber = row['SO Number'] ? String(row['SO Number']).trim() : null;
           const salesItem = row['Sales Item'] ? String(row['Sales Item']).trim() : null;
 
-          if (!salesNo) {
-            currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty Sales No.`);
+          if (!soNumber) {
+            currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty SO Number.`);
             return null;
           }
           if (!salesItem) {
-            currentErrorDetails.push(`Row ${csvRowNumber} (Sales No: ${salesNo}): Missing or empty Sales Item.`);
+            currentErrorDetails.push(`Row ${csvRowNumber} (SO Number: ${soNumber}): Missing or empty Sales Item.`);
             return null;
           }
           
           return {
-            sales_no: salesNo,
+            so_number: soNumber,
             sales_item: salesItem,
             customer_name: row['Customer Name'],
             print_design: row['Print Design'],
