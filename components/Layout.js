@@ -55,6 +55,7 @@ const Layout = ({ children }) => {
         { href: "/paper-roll/pr-movement", label: "Goods Movement", permission: "pr-movement" },
         { href: "/paper-roll/pr-receive", label: "Goods Receive", permission: "pr-receive" },
         { href: "/paper-roll/pr-return", label: "Goods Return", permission: "pr-return" },
+        { href: "/paper-roll/pr-printlabel", label: "Print Label", permission: "pr-printlabel" },
         { href: "/paper-roll/pr-movement-history", label: "Movement History", permission: "pr-movement-history" },
         { href: "/paper-roll/pr-opname-report", label: "Opname Report", permission: "pr-opname-report" },
         { href: "/paper-roll/pr-stock-opname", label: "Stock Opname", permission: "pr-stock-opname" },
@@ -64,11 +65,13 @@ const Layout = ({ children }) => {
     "Logistic": {
       prefix: "fg-",
       items: [
+        { href: "/logistic/fg-outstanding", label: "Delivery Outstanding", permission: "fg-outstanding" },
+        { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule", permission: "fg-delivery-schedule" },
+        { href: "/logistic/fg-loading", label: "Goods Issue", permission: "fg-loading" },
+        { href: "/logistic/fg-loadingdock", label: "FG Loading Dock", permission: "fg-loadingdock" },
         { href: "/logistic/fg-receive", label: "Goods Receive", permission: "fg-receive" },
-        { href: "/logistic/fg-issue", label: "Goods Issue", permission: "fg-issue" },
         { href: "/logistic/fg-stock", label: "Goods Stock Data", permission: "fg-stock" },
         { href: "/logistic/fg-movement-history", label: "Movement History", permission: "fg-movement-history" },
-        { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule", permission: "fg-delivery-schedule" },
         { href: "/logistic/fg-upload-delivery-schedule", label: "Upload Delivery Schedule", permission: "fg-upload-delivery-schedule" },
       ]
     },

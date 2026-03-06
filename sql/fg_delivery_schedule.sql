@@ -1,7 +1,7 @@
 -- SQL query to create the fg_delivery_schedule table for Supabase
 
 -- 1. Drop the old table if it exists and you want a fresh start
--- DROP TABLE IF EXISTS public.fg_delivery_schedule;
+DROP TABLE IF EXISTS public.fg_delivery_schedule;
 
 -- 2. Create the new table with the correct columns
 CREATE TABLE public.fg_delivery_schedule (
@@ -18,6 +18,7 @@ CREATE TABLE public.fg_delivery_schedule (
   delivery_quantity integer,
   user_name text,
   delivery_status text,
+  truck_no text,
   history json,
   CONSTRAINT fg_delivery_schedule_pkey PRIMARY KEY (id)
 );

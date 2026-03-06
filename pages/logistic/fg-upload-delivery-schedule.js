@@ -19,24 +19,6 @@ const UploadDeliverySchedule = ({ plant }) => {
     setErrorDetails([]);
   };
 
-  const parseAndFormatDate = (dateString) => {
-    if (!dateString) return null;
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      return dateString;
-    }
-
-    const parts = dateString.match(/^(\d{2})[.\/](\d{2})[.\/](\d{4})$/);
-    if (parts) {
-      const day = parts[1];
-      const month = parts[2];
-      const year = parts[3];
-      return `${year}-${month}-${day}`;
-    }
-    
-    return dateString; // Return original if no match
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -70,31 +52,35 @@ const UploadDeliverySchedule = ({ plant }) => {
         const dataToInsert = results.data.map((row, index) => {
           const csvRowNumber = index + 2;
           const soNumber = row['SO Number'] ? String(row['SO Number']).trim() : null;
-          const salesItem = row['Sales Item'] ? String(row['Sales Item']).trim() : null;
+          const soItem = row['SO Item'] ? String(row['SO Item']).trim() : null;
 
           if (!soNumber) {
             currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty SO Number.`);
             return null;
           }
-          if (!salesItem) {
-            currentErrorDetails.push(`Row ${csvRowNumber} (SO Number: ${soNumber}): Missing or empty Sales Item.`);
+          if (!soItem) {
+            currentErrorDetails.push(`Row ${csvRowNumber} (SO Number: ${soNumber}): Missing or empty SO Item.`);
             return null;
           }
           
           return {
             so_number: soNumber,
-            sales_item: salesItem,
+            so_item: soItem,
             customer_name: row['Customer Name'],
             print_design: row['Print Design'],
-            rdd: parseAndFormatDate(row['RDD']),
-            gross_weight: row['Gross Weight'],
-            order_qty: row['Order Qty'],
+            weight_pcs: row['Weight Pcs'],
+            outstanding_qty: row['Outstanding Qty'],
             schedule_date: scheduleDate,
             plant: plant,
+            user_name: user?.email,
+            delivery_status: 'SCHEDULED',
           };
         }).filter(Boolean);
 
-        if (dataToInsert.length > 0) {
+        if (currentErrorDetails.length > 0) {
+          setError(`Found ${currentErrorDetails.length} errors in the CSV file. Please fix them and try again.`);
+          setErrorDetails(currentErrorDetails);
+        } else if (dataToInsert.length > 0) {
           const { error: insertError } = await supabase
             .from('fg_delivery_schedule')
             .insert(dataToInsert);
@@ -107,11 +93,8 @@ const UploadDeliverySchedule = ({ plant }) => {
             setSelectedFile(null);
             document.getElementById('scheduleFile').value = '';
           }
-        }
-
-        setErrorDetails(currentErrorDetails);
-        if (currentErrorDetails.length > 0) {
-          setError(`Found ${currentErrorDetails.length} errors in the CSV file. Please fix them and try again.`);
+        } else {
+            setError('No valid data found in the CSV file to upload.');
         }
 
         setSubmitting(false);
