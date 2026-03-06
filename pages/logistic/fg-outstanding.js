@@ -1,18 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { supabase } from '../../supabase/client';
 import { formatDate } from '../../utils/dateFormatter';
 
-const DeliveryScheduleData = ({ plant }) => {
+const ScheduledDeliveriesData = ({ plant }) => {
   const [deliveryScheduleData, setDeliveryScheduleData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sortColumn, setSortColumn] = useState('schedule_date');
   const [sortDirection, setSortDirection] = useState('desc');
-  const [selectedDate, setSelectedDate] = useState('');
 
   const fetchDeliveryScheduleData = async () => {
-    if (!plant || !selectedDate) {
-      alert('Please select a plant and a date.');
+    if (!plant) {
+      alert('Please select a plant.');
       return;
     }
 
@@ -23,7 +23,7 @@ const DeliveryScheduleData = ({ plant }) => {
       .from('fg_delivery_schedule')
       .select('id, created_at, so_number, so_item, customer_name, print_design, weight_pcs, outstanding_qty, schedule_date, plant, delivery_quantity, user_name, delivery_status, truck_no')
       .eq('plant', plant)
-      .eq('schedule_date', selectedDate);
+      .eq('delivery_status', 'SCHEDULED');
 
     if (fetchError) {
       setError(fetchError.message || 'Failed to fetch delivery schedule data');
@@ -34,7 +34,9 @@ const DeliveryScheduleData = ({ plant }) => {
   };
 
   useEffect(() => {
-    setDeliveryScheduleData([]);
+    if(plant){
+        fetchDeliveryScheduleData();
+    }
   }, [plant]);
 
   const sortedData = useMemo(() => {
@@ -70,19 +72,7 @@ const DeliveryScheduleData = ({ plant }) => {
 
   return (
     <div>
-      <h2>Delivery Schedule Data</h2>
-      <div>
-        <label htmlFor="scheduleDate">Select Schedule Date: </label>
-        <input
-          type="date"
-          id="scheduleDate"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-        />
-        <button onClick={fetchDeliveryScheduleData} disabled={!selectedDate || !plant}>
-          Load Data
-        </button>
-      </div>
+      <h2>Scheduled Deliveries</h2>
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <style jsx>{`
@@ -122,6 +112,7 @@ const DeliveryScheduleData = ({ plant }) => {
               <th onClick={() => handleSort('user_name')}>User Name{getSortIndicator('user_name')}</th>
               <th onClick={() => handleSort('delivery_status')}>Delivery Status{getSortIndicator('delivery_status')}</th>
               <th onClick={() => handleSort('truck_no')}>Truck No{getSortIndicator('truck_no')}</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -139,6 +130,11 @@ const DeliveryScheduleData = ({ plant }) => {
                 <td>{item.user_name}</td>
                 <td>{item.delivery_status}</td>
                 <td>{item.truck_no}</td>
+                <td>
+                  <Link href={`/logistic/fg-loading?so_number=${item.so_number}&so_item=${item.so_item}`} passHref>
+                    <button>Send Item</button>
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -148,4 +144,4 @@ const DeliveryScheduleData = ({ plant }) => {
   );
 };
 
-export default DeliveryScheduleData;
+export default ScheduledDeliveriesData;

@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
-import QRCode from 'qrcode.react';
+import { QRCode } from 'qrcode.react';
 
 const PrintLabelPage = () => {
     const router = useRouter();
@@ -9,12 +9,13 @@ const PrintLabelPage = () => {
     const [roll, setRoll] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [inputId, setInputId] = useState('');
 
     useEffect(() => {
         if (!roll_id) {
             setLoading(false);
             return;
-        };
+        }
 
         const fetchRollData = async () => {
             setLoading(true);
@@ -40,9 +41,67 @@ const PrintLabelPage = () => {
         fetchRollData();
     }, [roll_id]);
 
+    const handleInputChange = (e) => {
+        setInputId(e.target.value);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (inputId.trim()) {
+            router.push(`/paper-roll/pr-printlabel?roll_id=${inputId.trim()}`);
+        }
+    };
+
     if (loading) return <div>Loading label data...</div>;
     if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
-    if (!roll) return <div>Please provide a roll_id in the URL. Example: /paper-roll/pr-printlabel?roll_id=R123</div>;
+    if (!roll) {
+        return (
+            <div className="label-container">
+                <style jsx>{`
+                    .label-container {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        padding: 20px;
+                        background-color: #f0f0f0;
+                    }
+                    .form-container {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        margin-top: 20px;
+                    }
+                    .input-field {
+                        padding: 10px;
+                        font-size: 1em;
+                        margin-bottom: 10px;
+                        width: 300px;
+                    }
+                    .submit-button {
+                        padding: 10px 20px;
+                        cursor: pointer;
+                        font-size: 1em;
+                    }
+                `}</style>
+                <div className="form-container">
+                    <h2>Print Paper Roll Label</h2>
+                    <p>Please enter the Paper Roll ID to generate the label.</p>
+                    <form onSubmit={handleSubmit}>
+                        <input
+                            type="text"
+                            value={inputId}
+                            onChange={handleInputChange}
+                            placeholder="Enter Paper Roll ID"
+                            className="input-field"
+                        />
+                        <button type="submit" className="submit-button">
+                            Generate Label
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="label-container">
