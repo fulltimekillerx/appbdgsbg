@@ -23,7 +23,7 @@ const ScheduledDeliveriesData = ({ plant }) => {
       .from('fg_delivery_schedule')
       .select('id, created_at, so_number, so_item, customer_name, print_design, weight_pcs, outstanding_qty, schedule_date, plant, delivery_quantity, user_name, delivery_status, truck_no')
       .eq('plant', plant)
-      .eq('delivery_status', 'SCHEDULED');
+      .in('delivery_status', ['Scheduled', 'Loading', 'PartialCarryover']);
 
     if (fetchError) {
       setError(fetchError.message || 'Failed to fetch delivery schedule data');
