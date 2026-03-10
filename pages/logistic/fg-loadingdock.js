@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../hooks/useAuth';
 import Link from 'next/link';
+import { finalizeShipment, cancelItemGroup } from '../../hooks/useShipment';
 
 const FGLoadingDock = ({ plant }) => {
   const { session } = useAuth() || {};
@@ -54,66 +55,24 @@ const FGLoadingDock = ({ plant }) => {
   const handleFinalizeShipment = async (truckNoToFinalize) => {
     setError('');
     setSuccess('');
-
-    try {
-      const { data: itemsToMove, error: fetchError } = await supabase
-        .from('fg_loading')
-        .select('*')
-        .eq('truck_no', truckNoToFinalize);
-
-      if (fetchError) throw fetchError;
-
-      const stockMovements = itemsToMove.map(item => {
-        // Destructure to remove columns from fg_loading that are not in fg_stock_movements
-        const { id, created_at, status, ...movementData } = item;
-
-        return {
-          ...movementData, // Contains the common fields: plant, so_number, so_item, quantity, truck_no
-          movement_type: '601',
-          user_id: session?.user?.id,
-          lmg_number: `LMG-${item.truck_no}-${item.id}`, // Use item.id from fg_loading to ensure uniqueness
-          initial_loc: item.plant,
-          destination_loc: 'Customer'
-        };
-      });
-
-      const { error: insertError } = await supabase
-        .from('fg_stock_movements')
-        .insert(stockMovements);
-
-      if (insertError) throw insertError;
-
-      const { error: updateError } = await supabase
-        .from('fg_loading')
-        .update({ status: 'Finish Loading' })
-        .eq('truck_no', truckNoToFinalize);
-
-      if (updateError) throw updateError;
-
-      setSuccess(`Shipment for truck ${truckNoToFinalize} finalized.`);
+    const result = await finalizeShipment(session, plant, truckNoToFinalize);
+    if (result.success) {
+      setSuccess(result.message);
       fetchLoadingData();
-    } catch (error) {
-      setError(`Error finalizing shipment: ${error.message}`);
+    } else {
+      setError(result.message);
     }
   };
 
   const handleCancelItemGroup = async (truckNo, item) => {
     setError('');
     setSuccess('');
-    try {
-        const { error } = await supabase
-            .from('fg_loading')
-            .delete()
-            .eq('truck_no', truckNo)
-            .eq('so_number', item.so_number)
-            .eq('so_item', item.so_item);
-
-        if (error) throw error;
-
-        setSuccess(`Items for SO ${item.so_number} on truck ${truckNo} cancelled.`);
-        fetchLoadingData();
-    } catch (error) {
-        setError(`Error cancelling items: ${error.message}`);
+    const result = await cancelItemGroup({ truckNo, soNumber: item.so_number, soItem: item.so_item });
+    if (result.success) {
+      setSuccess(result.message);
+      fetchLoadingData();
+    } else {
+      setError(result.message);
     }
   };
 

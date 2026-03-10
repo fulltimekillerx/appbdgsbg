@@ -73,7 +73,7 @@ const UploadDeliverySchedule = ({ plant }) => {
             schedule_date: scheduleDate,
             plant: plant,
             user_name: user?.email,
-            delivery_status: 'SCHEDULED',
+            delivery_status: 'Scheduled',
           };
         }).filter(Boolean);
 

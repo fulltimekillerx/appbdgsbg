@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from 'next/router';
+import { addItemToTruck, deleteItemFromTruck, finalizeShipment } from '../../hooks/useShipment';
 
 const FGLoading = ({ plant }) => {
   const [error, setError] = useState('');
@@ -11,7 +12,9 @@ const FGLoading = ({ plant }) => {
   const [soItem, setSoItem] = useState('');
   const [quantity, setQuantity] = useState('');
   const [loadingData, setLoadingData] = useState([]);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const router = useRouter();
+  const { session } = useAuth() || {};
   const { truck_no: truckNoFromQuery, so_number: soNumberFromQuery, so_item: soItemFromQuery } = router.query;
 
   const fetchLoadingData = async () => {
@@ -71,58 +74,76 @@ const FGLoading = ({ plant }) => {
     }
 
     if (!plant) {
-        setError('Cannot determine plant. Please make sure you are logged in and have a plant assigned.');
-        return;
+      setError('Cannot determine plant. Please make sure you are logged in and have a plant assigned.');
+      return;
     }
 
-    try {
-        const { error: insertError } = await supabase.from('fg_loading').insert([
-            {
-                truck_no: truckNo,
-                so_number: soNumber,
-                so_item: soItem,
-                quantity: parseInt(quantity, 10),
-                plant,
-                status: 'Loading',
-            },
-        ]);
-        if (insertError) throw insertError;
-        setSuccess('Item added to truck successfully.');
+    const result = await addItemToTruck({ truckNo, soNumber, soItem, quantity, plant });
 
-        if (!soNumberFromQuery) {
-            setSoNumber('');
-        }
-        if (!soItemFromQuery) {
-            setSoItem('');
-        }
-        setQuantity('');
-        fetchLoadingData();
-    } catch (error) {
-      setError(`Error adding item: ${error.message}`);
-    }
-  };
-
-  const handleDeleteItem = async (itemId) => {
-      setError('');
-      setSuccess('');
-      try {
-          const { error } = await supabase
-              .from('fg_loading')
-              .delete()
-              .eq('id', itemId);
-
-          if (error) throw error;
-          setSuccess('Item deleted successfully.');
-          fetchLoadingData();
-      } catch (error) {
-          setError(`Error deleting item: ${error.message}`);
+    if (result.success) {
+      setSuccess(result.message);
+      if (!soNumberFromQuery) {
+        setSoNumber('');
       }
+      if (!soItemFromQuery) {
+        setSoItem('');
+      }
+      setQuantity('');
+      fetchLoadingData();
+    } else {
+      setError(result.message);
+    }
   };
+
+  const handleDeleteItem = async (itemId, soNumber, soItem) => {
+    setError('');
+    setSuccess('');
+    const result = await deleteItemFromTruck({ itemId, soNumber, soItem });
+    if (result.success) {
+      setSuccess(result.message);
+      fetchLoadingData();
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleFinalizeShipment = async () => {
+    setError('');
+    setSuccess('');
+    setIsFinalizing(true);
+    const result = await finalizeShipment(session, plant, truckNo);
+    if (result.success) {
+      setSuccess(result.message);
+      fetchLoadingData();
+    } else {
+      setError(result.message);
+    }
+    setIsFinalizing(false);
+  };
+
+  const handleBackToLoadingDock = () => {
+    router.push('/logistic/fg-loadingdock');
+  };
+
+  const canFinalize = loadingData.length > 0 && loadingData.some(item => item.status === 'Loading');
 
   return (
     <div>
+      <div className="d-flex justify-content-between mb-3">
+        <button className="btn btn-secondary" onClick={handleBackToLoadingDock}>
+          Back to Loading Dock
+        </button>
+        <button
+          className="btn btn-success"
+          onClick={handleFinalizeShipment}
+          disabled={isFinalizing || !canFinalize}
+        >
+          {isFinalizing ? 'Finalizing...' : 'Finalize Shipment'}
+        </button>
+      </div>
+
       <h2>FG Loading</h2>
-      
+
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
@@ -159,6 +180,7 @@ const FGLoading = ({ plant }) => {
                   <th>SO Number</th>
                   <th>SO Item</th>
                   <th>Quantity</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -168,8 +190,15 @@ const FGLoading = ({ plant }) => {
                     <td>{item.so_number}</td>
                     <td>{item.so_item}</td>
                     <td>{item.quantity}</td>
+                    <td>{item.status}</td>
                     <td>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteItem(item.id)}>Delete</button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteItem(item.id, item.so_number, item.so_item)}
+                        disabled={item.status !== 'Loading'}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
