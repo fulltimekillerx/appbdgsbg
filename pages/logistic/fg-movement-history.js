@@ -119,6 +119,8 @@ const FGMovementHistory = ({ plant }) => {
             <option value="202">202</option>
             <option value="101">101</option>
             <option value="102">102</option>
+            <option value="601">601</option>
+            <option value="602">602</option>
             <option value="999">999</option>
         </select>
         <button onClick={handleFilter} style={{ padding: '5px' }}>Filter</button>
@@ -132,8 +134,8 @@ const FGMovementHistory = ({ plant }) => {
           <tr>
             <th onClick={() => requestSort('timestamp')} style={{ cursor: 'pointer' }}>Timestamp{getSortIndicator('timestamp')}</th>
             <th onClick={() => requestSort('lmg_number')} style={{ cursor: 'pointer' }}>LMG Number{getSortIndicator('lmg_number')}</th>
-            <th onClick={() => requestSort('fg_code')} style={{ cursor: 'pointer' }}>FG Code{getSortIndicator('fg_code')}</th>
-            <th onClick={() => requestSort('batch')} style={{ cursor: 'pointer' }}>Batch{getSortIndicator('batch')}</th>
+            <th onClick={() => requestSort('so_number')} style={{ cursor: 'pointer' }}>SO Number{getSortIndicator('so_number')}</th>
+            <th onClick={() => requestSort('so_item')} style={{ cursor: 'pointer' }}>SO Item{getSortIndicator('so_item')}</th>
             <th onClick={() => requestSort('movement_type')} style={{ cursor: 'pointer' }}>Movement Type{getSortIndicator('movement_type')}</th>
             <th onClick={() => requestSort('initial_loc')} style={{ cursor: 'pointer' }}>Initial Location{getSortIndicator('initial_loc')}</th>
             <th onClick={() => requestSort('destination_loc')} style={{ cursor: 'pointer' }}>Destination Location{getSortIndicator('destination_loc')}</th>
@@ -146,9 +148,8 @@ const FGMovementHistory = ({ plant }) => {
             <tr key={movement.id}>
               <td>{new Date(movement.timestamp).toLocaleString()}</td>
               <td>{movement.lmg_number}</td>
-              <td>{movement.fg_code}</td>
-              <td>{movement.prod_order_no}</td>
-              <td>{movement.batch}</td>
+              <td>{movement.so_number}</td>
+              <td>{movement.so_item}</td>
               <td>{movement.movement_type}</td>
               <td>{movement.initial_loc}</td>
               <td>{movement.destination_loc}</td>

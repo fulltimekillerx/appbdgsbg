@@ -51,6 +51,7 @@ const Layout = ({ children }) => {
       items: [
         { href: "/paper-roll/pr-dashboard", label: "Dashboard", permission: "pr-dashboard" },
         { href: "/paper-roll/pr-stock", label: "Inventory Stock", permission: "pr-stock" },
+        { href: "/paper-roll/pr-stock-pivot", label: "Stock Pivot", permission: "pr-stock-pivot" },
         { href: "/paper-roll/pr-issue", label: "Goods Issue", permission: "pr-issue" },
         { href: "/paper-roll/pr-movement", label: "Goods Movement", permission: "pr-movement" },
         { href: "/paper-roll/pr-receive", label: "Goods Receive", permission: "pr-receive" },
