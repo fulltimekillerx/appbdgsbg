@@ -50,5 +50,6 @@ VALUES
   ('pr-return', 'Return Paper Roll'),
   ('pr-stock-opname', 'Perform PR Stock Opname'),
   ('pr-stock', 'View Paper Roll Stock'),
-  ('pr-upload-stock', 'Upload Paper Roll Stock')
+  ('pr-upload-stock', 'Upload Paper Roll Stock'),
+  ('pr-stock-pivot', 'Analyze Paper Roll Stock with Pivot Table')
 ON CONFLICT (name) DO NOTHING;
