@@ -26,6 +26,7 @@ const FGLoading = ({ plant }) => {
         .select('*')
         .eq('plant', plant)
         .eq('truck_no', truckNo)
+        .eq('status', 'Loading')
         .order('id', { ascending: false });
 
       if (error) throw error;
