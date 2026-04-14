@@ -14,13 +14,8 @@ export const addItemToTruck = async ({ truckNo, soNumber, soItem, quantity, plan
     ]);
     if (insertError) throw insertError;
 
-    const { error: updateError } = await supabase
-      .from('fg_delivery_schedule')
-      .update({ delivery_status: 'Loading' })
-      .eq('so_number', soNumber)
-      .eq('so_item', soItem);
-
-    if (updateError) throw updateError;
+    // Recalculate and update the delivery schedule
+    await updateDeliveryQuantityFromLoading({ soNumber, soItem });
 
     return { success: true, message: 'Item added to truck successfully.' };
   } catch (error) {
@@ -37,13 +32,8 @@ export const deleteItemFromTruck = async ({ itemId, soNumber, soItem }) => {
 
     if (deleteError) throw deleteError;
 
-    const { error: updateError } = await supabase
-      .from('fg_delivery_schedule')
-      .update({ delivery_status: 'Scheduled' })
-      .eq('so_number', soNumber)
-      .eq('so_item', soItem);
-
-    if (updateError) throw updateError;
+    // Recalculate and update the delivery schedule
+    await updateDeliveryQuantityFromLoading({ soNumber, soItem });
 
     return { success: true, message: 'Item deleted successfully.' };
   } catch (error) {
@@ -62,9 +52,10 @@ export const cancelItemGroup = async ({ truckNo, soNumber, soItem }) => {
 
     if (deleteError) throw deleteError;
 
+    // After cancelling, reset the delivery schedule status
     const { error: updateError } = await supabase
       .from('fg_delivery_schedule')
-      .update({ delivery_status: 'Scheduled' })
+      .update({ delivery_status: 'Scheduled', delivery_quantity: 0 })
       .eq('so_number', soNumber)
       .eq('so_item', soItem);
 
@@ -151,12 +142,14 @@ export const finalizeShipment = async (session, plant, truckNo) => {
         }
         const originalSchedule = schedules[0];
 
-        // Update the original schedule to 'Loaded'
+        // Update the original schedule to 'Shipped'
         const { error: updateError } = await supabase
           .from('fg_delivery_schedule')
           .update({
-            delivery_status: 'Loaded',
+            delivery_status: 'Shipped',
             delivery_quantity: shippedQty,
+            user_name: session?.user?.email,
+            truck_no: truckNo,
           })
           .eq('id', originalSchedule.id);
 
@@ -188,4 +181,36 @@ export const finalizeShipment = async (session, plant, truckNo) => {
   } catch (error) {
     return { success: false, message: `Error finalizing shipment: ${error.message}` };
   }
+};
+
+
+// Helper function to update delivery quantity from fg_loading data
+const updateDeliveryQuantityFromLoading = async ({ soNumber, soItem }) => {
+  // 1. Calculate the total loaded quantity from fg_loading
+  const { data: loadingData, error: loadingError } = await supabase
+    .from('fg_loading')
+    .select('quantity')
+    .eq('so_number', soNumber)
+    .eq('so_item', soItem)
+    .eq('status', 'Loading');
+
+  if (loadingError) throw loadingError;
+
+  const totalLoadedQuantity = loadingData.reduce((sum, item) => sum + item.quantity, 0);
+
+  // 2. Determine the new status
+  const newStatus = totalLoadedQuantity > 0 ? 'Loading' : 'Scheduled';
+
+  // 3. Update the corresponding delivery schedule item
+  const { error: updateError } = await supabase
+    .from('fg_delivery_schedule')
+    .update({
+      delivery_quantity: totalLoadedQuantity,
+      delivery_status: newStatus,
+    })
+    .eq('so_number', soNumber)
+    .eq('so_item', soItem)
+    .in('delivery_status', ['Scheduled', 'Loading', 'PartialCarryover']); // Only update active schedules
+
+  if (updateError) throw updateError;
 };
