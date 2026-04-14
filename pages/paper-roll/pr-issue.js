@@ -59,72 +59,46 @@ const PRIssue = ({ plant }) => {
         .eq('plant', plant)
         .single();
 
-      // Check for errors other than "no rows found"
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw new Error(`Failed to fetch roll data: ${fetchError.message}`);
+      if (fetchError || !stockData) {
+        throw new Error(`Roll ID ${rollId} not found in plant ${plant}.`);
       }
-      
+
       const destination = `${machineNumber} - ${unitName} - ${group}`;
-      
+
       // Create a new record in the pr_stock_movements table to log the consumption
-      if (stockData) {
-        // Roll exists in stock, proceed as before
-        const { error: movementError } = await supabase.from('pr_stock_movements').insert([
-          {
-            roll_id: stockData.roll_id,
-            plant: plant,
-            movement_type: '201', // 201 represents consumption
-            initial_loc: stockData.bin_location,
-            destination_loc: destination,
-            weight: -stockData.weight,
-            diameter: -stockData.diameter,
-            length: -stockData.length,
-            prod_order_no: stockData.prod_order_no,
-            batch: stockData.batch,
-            user_id: user.user_metadata.display_name || user.email,
-          },
-        ]);
+      const { error: movementError } = await supabase.from('pr_stock_movements').insert([
+        {
+          roll_id: stockData.roll_id,
+          plant: plant,
+          movement_type: '201', // 201 represents consumption
+          initial_loc: stockData.bin_location,
+          destination_loc: destination,
+          weight: -stockData.weight,
+          diameter: -stockData.diameter,
+          length: -stockData.length,
+          prod_order_no: stockData.prod_order_no,
+          batch: stockData.batch,
+          user_id: user.user_metadata.display_name || user.email,
+        },
+      ]);
 
-        if (movementError) {
-          throw new Error(`Failed to record movement: ${movementError.message}`);
-        }
+      if (movementError) {
+        throw new Error(`Failed to record movement: ${movementError.message}`);
+      }
 
-        // Update the bin location and batch of the roll in the pr_stock table
-        const { error: updateError } = await supabase
-          .from('pr_stock')
-          .update({ bin_location: destination, batch: 'PRODUCTION' })
-          .eq('roll_id', rollId)
-          .eq('plant', plant);
+      // Update the bin location and batch of the roll in the pr_stock table
+      const { error: updateError } = await supabase
+        .from('pr_stock')
+        .update({ bin_location: destination, batch: 'PRODUCTION' })
+        .eq('roll_id', rollId)
+        .eq('plant', plant);
 
-        if (updateError) {
-          throw new Error(`Failed to update roll location: ${updateError.message}. Manual correction may be needed.`);
-        }
-        
-        setMessage(`Roll ${rollId} successfully moved to production at ${destination}.`);
-      } else {
-        // Roll does not exist in stock, record the consumption attempt
-        const { error: movementError } = await supabase.from('pr_stock_movements').insert([
-          {
-            roll_id: rollId,
-            plant: plant,
-            movement_type: '201', // Consumption
-            initial_loc: 'NOT_IN_STOCK',
-            destination_loc: destination,
-            weight: 0,
-            diameter: 0,
-            length: 0,
-            user_id: user.user_metadata.display_name || user.email,
-          },
-        ]);
-
-        if (movementError) {
-          throw new Error(`Failed to record movement for non-existent roll: ${movementError.message}`);
-        }
-
-        setMessage(`Roll ID ${rollId} not found in stock, but consumption was recorded.`);
+      if (updateError) {
+        throw new Error(`Failed to update roll location: ${updateError.message}. Manual correction may be needed.`);
       }
 
       await fetchProductionRolls();
+      setMessage(`Roll ${rollId} successfully moved to production at ${destination}.`);
       setRollId('');
     } catch (error) {
       setError(error.message);
