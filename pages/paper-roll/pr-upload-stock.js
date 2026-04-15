@@ -65,6 +65,7 @@ export default function PrUploadStock({ plant }) {
         let successCount = 0;
         let deleteCount = 0;
         const currentErrorDetails = [];
+        const CHUNK_SIZE = 500; // Process in chunks to avoid limits
 
         // 1. Get all roll IDs from the CSV file for the current plant
         const csvRollIds = new Set(results.data.map(row => String(row.roll_id ?? '').trim()).filter(id => id));
@@ -84,37 +85,42 @@ export default function PrUploadStock({ plant }) {
 
         const rollsToDelete = dbRolls.filter(roll => !csvRollIds.has(roll.roll_id)).map(roll => roll.roll_id);
         if (rollsToDelete.length > 0) {
-          const { error: deleteError } = await supabase
-            .from('pr_stock')
-            .delete()
-            .in('roll_id', rollsToDelete)
-            .eq('plant', plant);
+            for (let i = 0; i < rollsToDelete.length; i += CHUNK_SIZE) {
+                const chunk = rollsToDelete.slice(i, i + CHUNK_SIZE);
+                const { error: deleteError } = await supabase
+                    .from('pr_stock')
+                    .delete()
+                    .in('roll_id', chunk)
+                    .eq('plant', plant);
 
-          if (deleteError) {
-            currentErrorDetails.push(`Failed to delete old records for plant ${plant}: ${deleteError.message}`);
-          } else {
-            deleteCount = rollsToDelete.length;
-          }
+                if (deleteError) {
+                    currentErrorDetails.push(`Failed to delete a chunk of old records for plant ${plant}: ${deleteError.message}`);
+                } else {
+                    deleteCount += chunk.length;
+                }
+            }
         }
 
-        // 3. Process updates and additions for the current plant
-        setMessage('Updating and adding new records for the selected plant...');
-        const upsertData = results.data.map((row, index) => {
+        // 3. Process updates and additions, handling duplicates in the CSV
+        setMessage('De-duplicating and preparing records...');
+        const uniqueRows = new Map();
+        results.data.forEach((row, index) => {
             const csvRowNumber = index + 2;
             const rollId = String(row.roll_id ?? '').trim();
 
             if (!rollId) {
                 currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty roll_id.`);
-                return null; // Skip this row
+                return; // Skip
             }
             
             const weight = parseNumber(row.weight);
             if (weight === null) {
                 currentErrorDetails.push(`Row ${csvRowNumber} (Roll ${rollId}): Missing or invalid weight.`);
-                return null; // Skip this row
+                return; // Skip
             }
             
-            return {
+            // If a roll_id appears multiple times, this will keep the last one found.
+            uniqueRows.set(rollId, {
                 roll_id: rollId,
                 plant: plant,
                 weight: weight,
@@ -127,16 +133,22 @@ export default function PrUploadStock({ plant }) {
                 kind: row.kind ? String(row.kind).trim() : null,
                 batch: row.batch ? String(row.batch).trim() : null,
                 updated_at: new Date().toISOString(),
-            };
-        }).filter(Boolean); // Filter out null entries from validation errors
+            });
+        });
+
+        const upsertData = Array.from(uniqueRows.values());
 
         if (upsertData.length > 0) {
-            const { error: upsertError } = await supabase.from('pr_stock').upsert(upsertData, { onConflict: 'roll_id,plant' });
+            setMessage('Updating and adding new records for the selected plant...');
+            for (let i = 0; i < upsertData.length; i += CHUNK_SIZE) {
+                const chunk = upsertData.slice(i, i + CHUNK_SIZE);
+                const { error: upsertError } = await supabase.from('pr_stock').upsert(chunk, { onConflict: 'roll_id,plant' });
 
-            if (upsertError) {
-                currentErrorDetails.push(`Error synchronizing data for plant ${plant}: ${upsertError.message}`);
-            } else {
-                successCount = upsertData.length;
+                if (upsertError) {
+                    currentErrorDetails.push(`Error synchronizing a chunk of data for plant ${plant}: ${upsertError.message}`);
+                } else {
+                    successCount += chunk.length;
+                }
             }
         }
 
