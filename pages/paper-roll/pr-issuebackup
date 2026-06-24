@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../supabase/client';
@@ -71,7 +70,7 @@ const PRIssue = ({ plant }) => {
         {
           roll_id: stockData.roll_id,
           plant: plant,
-          movement_type: '201',
+          movement_type: '201', // 201 represents consumption
           initial_loc: stockData.bin_location,
           destination_loc: destination,
           weight: -stockData.weight,
@@ -97,25 +96,6 @@ const PRIssue = ({ plant }) => {
       if (updateError) {
         throw new Error(`Failed to update roll location: ${updateError.message}. Manual correction may be needed.`);
       }
-      
-      // ADDED: Fetch call to generate EDI file
-      fetch('/api/goods-issue', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            plant: stockData.plant,
-            order: stockData.prod_order_no,
-            kind: stockData.kind,
-            gsm: stockData.gsm,
-            width: stockData.width,
-            binloc: stockData.bin_location,
-            idroll: stockData.roll_id,
-            weight: stockData.weight,
-            length: stockData.length
-        }),
-      }).catch(err => console.error("EDI Generation Failed:", err)); // Log error without interrupting user
 
       await fetchProductionRolls();
       setMessage(`Roll ${rollId} successfully moved to production at ${destination}.`);
