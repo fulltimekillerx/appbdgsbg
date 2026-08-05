@@ -66,40 +66,25 @@ export default function PrUploadStock({ plant }) {
         let deleteCount = 0;
         const currentErrorDetails = [];
 
-        // 1. Get all roll IDs from the CSV file for the current plant
-        const csvRollIds = new Set(results.data.map(row => String(row.roll_id ?? '').trim()).filter(id => id));
-
-        // 2. Find and delete rolls for the current plant not in the CSV
+        // 1. Delete all existing records for the current plant
         setMessage('Removing old records for the selected plant...');
-        const { data: dbRolls, error: fetchError } = await supabase
+        const { data: deletedRows, error: deleteError } = await supabase
             .from('pr_stock')
-            .select('roll_id')
-            .eq('plant', plant);
+            .delete()
+            .eq('plant', plant)
+            .select();
 
-        if (fetchError) {
-          setMessage(`Error fetching existing rolls for plant ${plant}: ${fetchError.message}`);
+        if (deleteError) {
+          setMessage(`Error deleting old records for plant ${plant}: ${deleteError.message}`);
           setUploading(false);
           return;
         }
 
-        const rollsToDelete = dbRolls.filter(roll => !csvRollIds.has(roll.roll_id)).map(roll => roll.roll_id);
-        if (rollsToDelete.length > 0) {
-          const { error: deleteError } = await supabase
-            .from('pr_stock')
-            .delete()
-            .in('roll_id', rollsToDelete)
-            .eq('plant', plant);
+        deleteCount = deletedRows.length;
 
-          if (deleteError) {
-            currentErrorDetails.push(`Failed to delete old records for plant ${plant}: ${deleteError.message}`);
-          } else {
-            deleteCount = rollsToDelete.length;
-          }
-        }
-
-        // 3. Process updates and additions for the current plant
-        setMessage('Updating and adding new records for the selected plant...');
-        const upsertData = results.data.map((row, index) => {
+        // 2. Process and insert new records for the current plant
+        setMessage('Adding new records for the selected plant...');
+        const insertData = results.data.map((row, index) => {
             const csvRowNumber = index + 2;
             const rollId = String(row.roll_id ?? '').trim();
 
@@ -130,13 +115,13 @@ export default function PrUploadStock({ plant }) {
             };
         }).filter(Boolean); // Filter out null entries from validation errors
 
-        if (upsertData.length > 0) {
-            const { error: upsertError } = await supabase.from('pr_stock').upsert(upsertData, { onConflict: 'roll_id,plant' });
+        if (insertData.length > 0) {
+            const { error: insertError } = await supabase.from('pr_stock').insert(insertData);
 
-            if (upsertError) {
-                currentErrorDetails.push(`Error synchronizing data for plant ${plant}: ${upsertError.message}`);
+            if (insertError) {
+                currentErrorDetails.push(`Error inserting data for plant ${plant}: ${insertError.message}`);
             } else {
-                successCount = upsertData.length;
+                successCount = insertData.length;
             }
         }
 

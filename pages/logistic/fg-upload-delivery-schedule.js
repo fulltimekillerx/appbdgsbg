@@ -51,28 +51,28 @@ const UploadDeliverySchedule = ({ plant }) => {
         const currentErrorDetails = [];
         const dataToInsert = results.data.map((row, index) => {
           const csvRowNumber = index + 2;
-          const soNumber = row['SO Number'] ? String(row['SO Number']).trim() : null;
-          const soItem = row['SO Item'] ? String(row['SO Item']).trim() : null;
+          const soNumber = row.so_number ? String(row.so_number).trim() : null;
+          const soItem = row.so_item ? String(row.so_item).trim() : null;
 
           if (!soNumber) {
-            currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty SO Number.`);
+            currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty so_number.`);
             return null;
           }
           if (!soItem) {
-            currentErrorDetails.push(`Row ${csvRowNumber} (SO Number: ${soNumber}): Missing or empty SO Item.`);
+            currentErrorDetails.push(`Row ${csvRowNumber} (SO Number: ${soNumber}): Missing or empty so_item.`);
             return null;
           }
           
           return {
             so_number: soNumber,
             so_item: soItem,
-            customer_name: row['Customer Name'],
-            print_design: row['Print Design'],
-            weight_pcs: row['Weight Pcs'],
-            outstanding_qty: row['Outstanding Qty'],
+            customer_name: row.customer_name,
+            print_design: row.print_design,
+            weight_pcs: row.weight_pcs,
+            outstanding_qty: row.outstanding_qty,
             schedule_date: scheduleDate,
-            schedule_number: row['Schedule Number'],
-            truck_type: row['Truck Type'],
+            schedule_number: row.schedule_number,
+            truck_type: row.truck_type,
             plant: plant,
             user_name: user?.email,
             delivery_status: 'Scheduled',

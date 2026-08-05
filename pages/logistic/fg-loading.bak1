@@ -10,10 +10,6 @@ const FGLoading = ({ plant }) => {
   const [truckNo, setTruckNo] = useState('');
   const [soNumber, setSoNumber] = useState('');
   const [soItem, setSoItem] = useState('');
-  const [lmgNumber, setLmgNumber] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [printDesign, setPrintDesign] = useState('');
-  const [weight, setWeight] = useState('');
   const [quantity, setQuantity] = useState('');
   const [loadingData, setLoadingData] = useState([]);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -68,42 +64,13 @@ const FGLoading = ({ plant }) => {
     }
   }, [truckNo, plant]);
 
-  useEffect(() => {
-    const fetchStockData = async () => {
-      if (lmgNumber) {
-        const { data, error } = await supabase
-          .from('fg_stock')
-          .select('so_number, so_item, customer_name, print_design, weight, quantity')
-          .eq('lmg_number', lmgNumber)
-          .single();
-
-        if (data) {
-          setSoNumber(data.so_number || '');
-          setSoItem(data.so_item || '');
-          setCustomerName(data.customer_name || '');
-          setPrintDesign(data.print_design || '');
-          setWeight(data.weight || '');
-          setQuantity(data.quantity || '');
-        } else {
-          setSoNumber('');
-          setSoItem('');
-          setCustomerName('');
-          setPrintDesign('');
-          setWeight('');
-          setQuantity('');
-        }
-      }
-    };
-    fetchStockData();
-  }, [lmgNumber]);
-
   const handleAddItem = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (!truckNo || !lmgNumber || !quantity) {
-      setError('Truck No, LMG Number, and Quantity are required.');
+    if (!truckNo || !soNumber || !soItem || !quantity) {
+      setError('All fields are required.');
       return;
     }
 
@@ -112,11 +79,16 @@ const FGLoading = ({ plant }) => {
       return;
     }
 
-    const result = await addItemToTruck({ truckNo, soNumber, soItem, lmgNumber, quantity, plant });
+    const result = await addItemToTruck({ truckNo, soNumber, soItem, quantity, plant });
 
     if (result.success) {
       setSuccess(result.message);
-      setLmgNumber('');
+      if (!soNumberFromQuery) {
+        setSoNumber('');
+      }
+      if (!soItemFromQuery) {
+        setSoItem('');
+      }
       setQuantity('');
       fetchLoadingData();
     } else {
@@ -179,32 +151,20 @@ const FGLoading = ({ plant }) => {
       <form onSubmit={handleAddItem} className="card mb-4">
         <div className="card-header">Add Item to Truck</div>
         <div className="card-body">
-          <div className="row g-3">
-            <div className="col-md-4">
+          <div className="row">
+            <div className="col-md-3">
               <input type="text" className="form-control" placeholder="Truck No." value={truckNo} onChange={e => setTruckNo(e.target.value)} disabled={!!truckNoFromQuery} />
             </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="LMG Number" value={lmgNumber} onChange={e => setLmgNumber(e.target.value)} />
+            <div className="col-md-3">
+              <input type="text" className="form-control" placeholder="SO Number" value={soNumber} onChange={e => setSoNumber(e.target.value)} disabled={!!soNumberFromQuery} />
             </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="SO Number" value={soNumber} disabled />
+            <div className="col-md-2">
+              <input type="text" className="form-control" placeholder="SO Item" value={soItem} onChange={e => setSoItem(e.target.value)} disabled={!!soItemFromQuery} />
             </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="SO Item" value={soItem} disabled />
-            </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="Customer Name" value={customerName} disabled />
-            </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="Print Design" value={printDesign} disabled />
-            </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="Weight" value={weight} disabled />
-            </div>
-            <div className="col-md-4">
+            <div className="col-md-2">
               <input type="number" className="form-control" placeholder="Quantity" value={quantity} onChange={e => setQuantity(e.target.value)} />
             </div>
-            <div className="col-md-4">
+            <div className="col-md-2">
               <button type="submit" className="btn btn-primary w-100">Add Item</button>
             </div>
           </div>
@@ -220,7 +180,6 @@ const FGLoading = ({ plant }) => {
                 <tr>
                   <th>SO Number</th>
                   <th>SO Item</th>
-                  <th>LMG Number</th>
                   <th>Quantity</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -231,7 +190,6 @@ const FGLoading = ({ plant }) => {
                   <tr key={item.id}>
                     <td>{item.so_number}</td>
                     <td>{item.so_item}</td>
-                    <td>{item.lmg_number}</td>
                     <td>{item.quantity}</td>
                     <td>{item.status}</td>
                     <td>

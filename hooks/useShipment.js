@@ -1,12 +1,13 @@
 import { supabase } from '../supabase/client';
 
-export const addItemToTruck = async ({ truckNo, soNumber, soItem, quantity, plant }) => {
+export const addItemToTruck = async ({ truckNo, soNumber, soItem, lmgNumber, quantity, plant }) => {
   try {
     const { error: insertError } = await supabase.from('fg_loading').insert([
       {
         truck_no: truckNo,
         so_number: soNumber,
         so_item: soItem,
+        lmg_number: lmgNumber,
         quantity: parseInt(quantity, 10),
         plant,
         status: 'Loading',
@@ -91,7 +92,7 @@ export const finalizeShipment = async (session, plant, truckNo) => {
         ...movementData,
         movement_type: '601',
         user_id: session?.user?.id,
-        lmg_number: `LMG-${item.truck_no}-${item.id}`,
+        lmg_number: item.lmg_number,
         initial_loc: item.plant,
         destination_loc: 'Customer',
       };

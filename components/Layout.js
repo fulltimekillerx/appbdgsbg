@@ -8,25 +8,40 @@ const Layout = ({ children }) => {
   const [permissions, setPermissions] = useState(null); // Local state for permissions
   const [plant, setPlant] = useState('7025');
   const [openMenu, setOpenMenu] = useState(null);
+  const [plants, setPlants] = useState([]);
 
-  // Fetch permissions when the user is loaded
+  // Fetch permissions and plants when the user is loaded
   useEffect(() => {
     if (user) {
-      const fetchPermissions = async () => {
-        const { data, error } = await supabase
+      const fetchInitialData = async () => {
+        // Fetch Permissions
+        const { data: permissionsData, error: permissionsError } = await supabase
           .from('user_profiles')
           .select('permissions')
           .eq('id', user.id)
           .single();
         
-        if (data) {
-          setPermissions(data.permissions);
+        if (permissionsData) {
+          setPermissions(permissionsData.permissions);
+        }
+
+        // Fetch Plants
+        const { data: plantsData, error: plantsError } = await supabase
+          .from('plant')
+          .select('plant_code');
+        
+        if (plantsData) {
+          setPlants(plantsData);
+          if (plantsData.length > 0) {
+            setPlant(plantsData[0].plant_code);
+          }
         }
       };
-      fetchPermissions();
+      fetchInitialData();
     } else {
-      // Clear permissions if user logs out
+      // Clear permissions and plants if user logs out
       setPermissions(null);
+      setPlants([]);
     }
   }, [user]);
 
@@ -50,7 +65,7 @@ const Layout = ({ children }) => {
       prefix: "pr-",
       items: [
         { href: "/paper-roll/pr-dashboard", label: "Dashboard", permission: "pr-dashboard" },
-        { href: "/paper-roll/pr-stock", label: "Inventory Stock", permission: "pr-stock" },
+        { href: "/paper-roll/pr-stock", label: "Paper Roll Stock", permission: "pr-stock" },
         { href: "/paper-roll/pr-stock-pivot", label: "Stock Pivot", permission: "pr-stock-pivot" },
         { href: "/paper-roll/pr-map", label: "Warehouse Map", permission: "pr-map" },
         { href: "/paper-roll/pr-issue", label: "Goods Issue", permission: "pr-issue" },
@@ -69,12 +84,13 @@ const Layout = ({ children }) => {
       items: [
         { href: "/logistic/fg-outstanding", label: "Delivery Outstanding", permission: "fg-outstanding" },
         { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule", permission: "fg-delivery-schedule" },
+        { href: "/logistic/fg-stock", label: "Finished Goods Stock", permission: "fg-stock" },
         { href: "/logistic/fg-loading", label: "Goods Issue", permission: "fg-loading" },
         { href: "/logistic/fg-loadingdock", label: "FG Loading Dock", permission: "fg-loadingdock" },
         { href: "/logistic/fg-receive", label: "Goods Receive", permission: "fg-receive" },
-        { href: "/logistic/fg-stock", label: "Goods Stock Data", permission: "fg-stock" },
         { href: "/logistic/fg-movement-history", label: "Movement History", permission: "fg-movement-history" },
         { href: "/logistic/fg-upload-delivery-schedule", label: "Upload Delivery Schedule", permission: "fg-upload-delivery-schedule" },
+        { href: "/logistic/fg-upload-stock-identity", label: "Upload Stock Identity", permission: "fg-upload-stock-identity" },
         { href: "/logistic/fg-transporter", label: "Transporter", permission: "fg-transporter" },
       ]
     },
@@ -142,8 +158,9 @@ const Layout = ({ children }) => {
                 </li>
                 <li>
                 <select value={plant} onChange={handlePlantChange}>
-                  <option value="7025">7025</option>
-                  <option value="7027">7027</option>
+                  {plants.map(p => (
+                    <option key={p.plant_code} value={p.plant_code}>{p.plant_code}</option>
+                  ))}
                 </select>
                 </li>
               </>
