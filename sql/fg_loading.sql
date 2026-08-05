@@ -9,7 +9,7 @@ CREATE TABLE public.fg_loading (
   created_at timestamptz NOT NULL DEFAULT now(),
   so_number text NOT NULL,
   so_item text NOT NULL,
-  quantity integer NOT NULL,
+  quantity numeric NOT NULL,
   truck_no text NOT NULL,
   plant text NOT NULL,
   status text,

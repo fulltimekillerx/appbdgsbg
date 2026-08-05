@@ -20,12 +20,17 @@ const FGStockData = ({ plant }) => {
     const { data, error: fetchError } = await supabase
       .from('fg_stock')
       .select(`
-        id,
-        created_at,
         lmg_number,
         bin_location,
         plant,
-        user_id
+        so_number,
+        so_item,
+        customer_name,
+        print_design,
+        quantity,
+        weight,
+        user_id,
+        updated_at
       `)
       .eq('plant', plant);
 
@@ -84,18 +89,30 @@ const FGStockData = ({ plant }) => {
         <table>
           <thead>
             <tr>
-              <th onClick={() => handleSort('lmg_number')}>LMG Number{getSortIndicator('lmg_number')}</th>
+              <th onClick={() => handleSort('lmg_number')}>LMG Number{getSortIndicator('lmg_number')}</th>    
               <th onClick={() => handleSort('bin_location')}>Bin Location{getSortIndicator('bin_location')}</th>
-              <th onClick={() => handleSort('created_at')}>Received At{getSortIndicator('created_at')}</th>
+              <th onClick={() => handleSort('so_number')}>SO Number{getSortIndicator('so_number')}</th>
+              <th onClick={() => handleSort('so_item')}>SO Item{getSortIndicator('so_item')}</th>
+              <th onClick={() => handleSort('customer_name')}>Customer Name{getSortIndicator('customer_name')}</th>
+              <th onClick={() => handleSort('print_design')}>Print Design{getSortIndicator('print_design')}</th>
+              <th onClick={() => handleSort('quantity')}>Quantity{getSortIndicator('quantity')}</th>
+              <th onClick={() => handleSort('weight')}>Weight{getSortIndicator('weight')}</th>
+              <th onClick={() => handleSort('updated_at')}>Updated At{getSortIndicator('updated_at')}</th>
               <th onClick={() => handleSort('user_id')}>User{getSortIndicator('user_id')}</th>
             </tr>
           </thead>
           <tbody>
             {sortedData.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.lmg_number}>
                 <td>{item.lmg_number}</td>
                 <td>{item.bin_location}</td>
-                <td>{new Date(item.created_at).toLocaleString()}</td>
+                <td>{item.so_number}</td>
+                <td>{item.so_item}</td>
+                <td>{item.customer_name}</td>
+                <td>{item.print_design}</td>
+                <td>{item.quantity}</td>
+                <td>{item.weight}</td>
+                <td>{new Date(item.updated_at).toLocaleString()}</td>
                 <td>{item.user_id}</td>
               </tr>
             ))}

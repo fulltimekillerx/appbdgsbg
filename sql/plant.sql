@@ -2,7 +2,7 @@
 
 -- 1. Create the new table with the correct columns
 CREATE TABLE public.plant (
-  plant integer NOT NULL,
+  plant_code integer NOT NULL,
   description text,
   CONSTRAINT plant_pkey PRIMARY KEY (plant)
 );
