@@ -45,37 +45,40 @@ export default function FgUploadStockIdentity({ plant }) {
         let successCount = 0;
         const currentErrorDetails = [];
 
-        const lmgNumbersFromCsv = results.data.map(row => String(row.lmg_number ?? '').trim()).filter(id => id);
+        const allLmgNumbersFromCsv = results.data.map(row => String(row.lmg_number ?? '').trim()).filter(id => id);
 
-        if (lmgNumbersFromCsv.length === 0) {
+        if (allLmgNumbersFromCsv.length === 0) {
             setMessage('No lmg_number found in the CSV file.');
             setUploading(false);
             return;
         }
 
-        // Fetch existing lmg_numbers from fg_stock for the current plant to ensure we only update existing records
-        const { data: existingStock, error: fetchError } = await supabase
-            .from('fg_stock')
-            .select('lmg_number')
-            .eq('plant', plant)
-            .in('lmg_number', lmgNumbersFromCsv);
+        const CHUNK_SIZE = 100; // Process 100 LMG numbers at a time
+        let existingLmgNumbers = new Set();
 
-        if (fetchError) {
-            setMessage(`Error fetching existing stock for plant ${plant}: ${fetchError.message}`);
-            setUploading(false);
-            return;
+        for (let i = 0; i < allLmgNumbersFromCsv.length; i += CHUNK_SIZE) {
+            const chunk = allLmgNumbersFromCsv.slice(i, i + CHUNK_SIZE);
+            const { data: existingStock, error: fetchError } = await supabase
+                .from('fg_stock')
+                .select('lmg_number')
+                .eq('plant', plant)
+                .in('lmg_number', chunk);
+
+            if (fetchError) {
+                currentErrorDetails.push(`Error fetching chunk of existing stock for plant ${plant}: ${fetchError.message}`);
+                continue; // Move to the next chunk
+            }
+            
+            existingStock.forEach(item => existingLmgNumbers.add(item.lmg_number));
         }
-        
-        const existingLmgNumbers = new Set(existingStock.map(item => item.lmg_number));
 
-        // Filter data to only update records that exist in the database
         const dataToUpdate = results.data.map((row, index) => {
             const csvRowNumber = index + 2;
             const lmg_number = String(row.lmg_number ?? '').trim();
 
             if (!lmg_number) {
                 currentErrorDetails.push(`Row ${csvRowNumber}: Missing or empty lmg_number.`);
-                return null; // Skip this row
+                return null;
             }
 
             if (!existingLmgNumbers.has(lmg_number)) {
@@ -83,30 +86,29 @@ export default function FgUploadStockIdentity({ plant }) {
                 return null;
             }
             
-            // Construct the update payload, including the plant and explicitly omitting bin_location.
-            const updatePayload = {
+            return {
                 lmg_number: lmg_number,
-                plant: plant, // Always include the selected plant
+                plant: plant,
                 so_number: row.so_number ? String(row.so_number).trim() : null,
                 so_item: row.so_item ? String(row.so_item).trim() : null,
                 customer_name: row.customer_name ? String(row.customer_name).trim() : null,
                 print_design: row.print_design ? String(row.print_design).trim() : null,
                 quantity: parseNumber(row.quantity),
                 weight: parseNumber(row.weight),
+                updated_at: new Date().toISOString(),
             };
-
-            return updatePayload;
-        }).filter(Boolean); // Filter out null entries from validation errors
+        }).filter(Boolean);
 
         if (dataToUpdate.length > 0) {
-            // Upsert the data. `onConflict` on `lmg_number` will find the existing row to update.
-            const { error: updateError } = await supabase.from('fg_stock').upsert(dataToUpdate, { onConflict: 'lmg_number' });
+            for (let i = 0; i < dataToUpdate.length; i += CHUNK_SIZE) {
+                const chunk = dataToUpdate.slice(i, i + CHUNK_SIZE);
+                const { error: updateError } = await supabase.from('fg_stock').upsert(chunk, { onConflict: 'lmg_number' });
 
-            if (updateError) {
-                // The error message will now be more informative if something else goes wrong.
-                currentErrorDetails.push(`Error updating data for plant ${plant}: ${updateError.message}`);
-            } else {
-                successCount = dataToUpdate.length;
+                if (updateError) {
+                    currentErrorDetails.push(`Error updating chunk of data for plant ${plant}: ${updateError.message}`);
+                } else {
+                    successCount += chunk.length;
+                }
             }
         }
 
