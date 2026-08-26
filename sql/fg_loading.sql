@@ -10,6 +10,8 @@ CREATE TABLE public.fg_loading (
   lmg_number text NOT NULL,
   so_number text NOT NULL,
   so_item text NOT NULL,
+  customer_name text,
+  print_design text,
   quantity numeric NOT NULL,
   truck_no text NOT NULL,
   plant text NOT NULL,
@@ -29,8 +31,21 @@ FOR SELECT
 TO authenticated
 USING (true);
 
-CREATE POLICY "Allow authenticated users to insert their own loading data"
+CREATE POLICY "Allow authenticated users to insert loading data"
 ON public.fg_loading
 FOR INSERT
 TO authenticated
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to update loading data"
+ON public.fg_loading
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to delete loading data"
+ON public.fg_loading
+FOR DELETE
+TO authenticated
+USING (true);

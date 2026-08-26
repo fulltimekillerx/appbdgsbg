@@ -93,7 +93,7 @@ export const finalizeShipment = async (session, plant, truckNo) => {
       return {
         ...movementData,
         movement_type: '601',
-        user_id: session?.user?.user_metadata?.display_name || session?.user?.email,
+        user_id: session?.user?.id,
         lmg_number: item.lmg_number,
         initial_loc: item.plant,
         destination_loc: truckNo,
@@ -136,8 +136,8 @@ export const finalizeShipment = async (session, plant, truckNo) => {
 
       } else {
         // Otherwise, update the quantity and weight
-        const unitWeight = stock.quantity > 0 ? Math.round((stock.weight / stock.quantity) * 100) / 100 : 0;
-        const newWeight = Math.round((newQuantity * unitWeight) * 100) / 100;
+        const unitWeight = stock.quantity > 0 ? stock.weight / stock.quantity : 0;
+        const newWeight = newQuantity * unitWeight;
 
         const { error: updateError } = await supabase
           .from('fg_stock')
@@ -167,7 +167,6 @@ export const finalizeShipment = async (session, plant, truckNo) => {
     }, {});
 
     // 6. Process each aggregated item to update delivery schedules
-    /*
     const processScheduleUpdates = async () => {
       for (const update of Object.values(quantityUpdates)) {
         const shippedQty = update.quantity;
@@ -221,7 +220,6 @@ export const finalizeShipment = async (session, plant, truckNo) => {
     };
 
     await processScheduleUpdates();
-    */
 
     return { success: true, message: `Shipment for truck ${truckNo} finalized.` };
 

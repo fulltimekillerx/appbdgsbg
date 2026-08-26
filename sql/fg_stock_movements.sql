@@ -1,4 +1,4 @@
--- SQL query to create the pr_stock_movements table for Supabase
+-- SQL query to create the fg_stock_movements table for Supabase
 
 -- 1. Drop the old table if it exists and you want a fresh start
 DROP TABLE IF EXISTS public.fg_stock_movements;
@@ -11,6 +11,8 @@ CREATE TABLE public.fg_stock_movements (
   movement_type text,
   so_number text,
   so_item text,
+  customer_name text, -- Added to store customer name
+  print_design text, -- Added to store print design
   initial_loc text,
   destination_loc text,
   timestamp timestamptz DEFAULT now(),
@@ -24,15 +26,7 @@ CREATE TABLE public.fg_stock_movements (
 -- 3. Enable Row Level Security (RLS) for the table
 ALTER TABLE public.fg_stock_movements ENABLE ROW LEVEL SECURITY;
 
--- 4. Create policies to control access
-CREATE POLICY "Allow authenticated users to view their own stock movements"
-ON public.fg_stock_movements
-FOR SELECT
-TO authenticated
-USING (true);
-
-CREATE POLICY "Allow authenticated users to insert their own stock movements"
-ON public.fg_stock_movements
-FOR INSERT
-TO authenticated
-WITH CHECK (true);
+-- 4. Create policies for access control
+-- Note: Policies might need to be adjusted based on your security requirements.
+CREATE POLICY "Allow authenticated users to view movements" ON public.fg_stock_movements FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users to insert movements" ON public.fg_stock_movements FOR INSERT TO authenticated WITH CHECK (true);

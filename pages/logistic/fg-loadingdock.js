@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../hooks/useAuth';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { finalizeShipment, cancelItemGroup } from '../../hooks/useShipment';
 
 const FGLoadingDock = ({ plant }) => {
@@ -9,6 +10,8 @@ const FGLoadingDock = ({ plant }) => {
   const [loadingData, setLoadingData] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [newTruckNo, setNewTruckNo] = useState('');
+  const router = useRouter();
 
   const fetchLoadingData = async () => {
     if (!plant) return;
@@ -76,6 +79,12 @@ const FGLoadingDock = ({ plant }) => {
     }
   };
 
+  const handleAddNewTruck = () => {
+    if (newTruckNo.trim()) {
+      router.push(`/logistic/fg-loading?truck_no=${newTruckNo.trim()}`);
+    }
+  };
+
   return (
     <div>
       <h2>FG Loading Dock</h2>
@@ -84,9 +93,22 @@ const FGLoadingDock = ({ plant }) => {
       {success && <div className="alert alert-success">{success}</div>}
 
       <div className="mb-3">
-        <Link href="/logistic/fg-loading" passHref>
-          <button className="btn btn-primary">Add New Truck</button>
-        </Link>
+        <div className="input-group">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Enter New Truck No."
+            value={newTruckNo}
+            onChange={(e) => setNewTruckNo(e.target.value)}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={handleAddNewTruck}
+            disabled={!newTruckNo.trim()}
+          >
+            Add New Truck
+          </button>
+        </div>
       </div>
 
       <h3>Live Loading View</h3>

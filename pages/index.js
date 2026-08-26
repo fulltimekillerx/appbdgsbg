@@ -6,7 +6,7 @@ export default function Home() {
 
   return (
     <div>
-      <h1>Warehouse Management System</h1>
+      <h1>Warehouse Execution System</h1>
       <p>Version: {pkg.version}</p>
     </div>
   );
