@@ -92,6 +92,13 @@ const FGLoading = ({ plant }) => {
           setWeight('');
           setQuantity('');
         }
+      } else {
+          setSoNumber('');
+          setSoItem('');
+          setCustomerName('');
+          setPrintDesign('');
+          setWeight('');
+          setQuantity('');
       }
     };
     fetchStockData();
@@ -112,15 +119,40 @@ const FGLoading = ({ plant }) => {
       return;
     }
 
-    const result = await addItemToTruck({ truckNo, soNumber, soItem, lmgNumber, quantity, plant });
+    try {
+        const { data: stockData, error: stockError } = await supabase
+            .from('fg_stock')
+            .select('so_number, so_item, quantity')
+            .eq('lmg_number', lmgNumber)
+            .single();
 
-    if (result.success) {
-      setSuccess(result.message);
-      setLmgNumber('');
-      setQuantity('');
-      fetchLoadingData();
-    } else {
-      setError(result.message);
+        if (stockError || !stockData) {
+            setError('LMG Number does not exist in stock.');
+            return;
+        }
+
+        if (!stockData.so_number || !stockData.so_item) {
+            setError('SO Number and SO Item are missing for this LMG number.');
+            return;
+        }
+
+        if (parseInt(quantity, 10) > stockData.quantity) {
+            setError(`Quantity cannot be greater than available stock quantity: ${stockData.quantity}`);
+            return;
+        }
+
+        const result = await addItemToTruck({ truckNo, soNumber, soItem, lmgNumber, customerName, printDesign, quantity, plant });
+
+        if (result.success) {
+            setSuccess(result.message);
+            setLmgNumber('');
+            setQuantity('');
+            fetchLoadingData();
+        } else {
+            setError(result.message);
+        }
+    } catch (error) {
+        setError(`An unexpected error occurred: ${error.message}`);
     }
   };
 
@@ -175,16 +207,14 @@ const FGLoading = ({ plant }) => {
 
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-
+    <table>
+      <td>
       <form onSubmit={handleAddItem} className="card mb-4">
-        <div className="card-header">Add Item to Truck</div>
+        <div className="card-header"><h3>Add Item to Truck</h3></div>
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="Truck No." value={truckNo} onChange={e => setTruckNo(e.target.value)} disabled={!!truckNoFromQuery} />
-            </div>
-            <div className="col-md-4">
-              <input type="text" className="form-control" placeholder="LMG Number" value={lmgNumber} onChange={e => setLmgNumber(e.target.value)} />
+            <input type="text" className="form-control" placeholder="Truck No." value={truckNo} onChange={e => setTruckNo(e.target.value)} disabled />
             </div>
             <div className="col-md-4">
               <input type="text" className="form-control" placeholder="SO Number" value={soNumber} disabled />
@@ -202,6 +232,9 @@ const FGLoading = ({ plant }) => {
               <input type="text" className="form-control" placeholder="Weight" value={weight} disabled />
             </div>
             <div className="col-md-4">
+              <input type="text" className="form-control" placeholder="LMG Number" value={lmgNumber} onChange={e => setLmgNumber(e.target.value)} />
+            </div>
+            <div className="col-md-4">
               <input type="number" className="form-control" placeholder="Quantity" value={quantity} onChange={e => setQuantity(e.target.value)} />
             </div>
             <div className="col-md-4">
@@ -210,7 +243,8 @@ const FGLoading = ({ plant }) => {
           </div>
         </div>
       </form>
-
+      </td>
+      <td>
       <h3>Items on this Truck</h3>
       {loadingData.length > 0 ? (
         <div className="card">
@@ -221,6 +255,8 @@ const FGLoading = ({ plant }) => {
                   <th>SO Number</th>
                   <th>SO Item</th>
                   <th>LMG Number</th>
+                  <th>Customer Name</th>
+                  <th>Print Design</th>
                   <th>Quantity</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -232,6 +268,8 @@ const FGLoading = ({ plant }) => {
                     <td>{item.so_number}</td>
                     <td>{item.so_item}</td>
                     <td>{item.lmg_number}</td>
+                    <td>{item.customer_name}</td>
+                    <td>{item.print_design}</td>
                     <td>{item.quantity}</td>
                     <td>{item.status}</td>
                     <td>
@@ -252,6 +290,8 @@ const FGLoading = ({ plant }) => {
       ) : (
         <p>No items have been added to this truck yet.</p>
       )}
+    </td>
+    </table>
     </div>
   );
 };
