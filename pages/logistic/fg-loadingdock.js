@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
-import { useAuth } from '../../hooks/useAuth';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { finalizeShipment, cancelItemGroup } from '../../hooks/useShipment';
+import { useShipment } from '../../hooks/useShipment';
 
 const FGLoadingDock = ({ plant }) => {
-  const { session } = useAuth() || {};
+  const { finalizeShipment, cancelItemGroup } = useShipment();
   const [loadingData, setLoadingData] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -58,7 +57,7 @@ const FGLoadingDock = ({ plant }) => {
   const handleFinalizeShipment = async (truckNoToFinalize) => {
     setError('');
     setSuccess('');
-    const result = await finalizeShipment(session, plant, truckNoToFinalize);
+    const result = await finalizeShipment(plant, truckNoToFinalize);
     if (result.success) {
       setSuccess(result.message);
       fetchLoadingData();

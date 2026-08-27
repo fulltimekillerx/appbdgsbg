@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../supabase/client';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from 'next/router';
-import { addItemToTruck, deleteItemFromTruck, finalizeShipment } from '../../hooks/useShipment';
+import { useShipment } from '../../hooks/useShipment';
 
 const FGLoading = ({ plant }) => {
   const [error, setError] = useState('');
@@ -18,7 +18,8 @@ const FGLoading = ({ plant }) => {
   const [loadingData, setLoadingData] = useState([]);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const router = useRouter();
-  const { session } = useAuth() || {};
+  const { user } = useAuth() || {};
+  const { addItemToTruck, deleteItemFromTruck, finalizeShipment } = useShipment();
   const { truck_no: truckNoFromQuery, so_number: soNumberFromQuery, so_item: soItemFromQuery } = router.query;
 
   const fetchLoadingData = async () => {
@@ -172,7 +173,7 @@ const FGLoading = ({ plant }) => {
     setError('');
     setSuccess('');
     setIsFinalizing(true);
-    const result = await finalizeShipment(session, plant, truckNo);
+    const result = await finalizeShipment(plant, truckNo);
     if (result.success) {
       setSuccess(result.message);
       fetchLoadingData();

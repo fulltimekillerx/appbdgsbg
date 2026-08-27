@@ -1,6 +1,6 @@
 import { supabase } from '../supabase/client';
 
-export const addItemToTruck = async ({ truckNo, soNumber, soItem, lmgNumber, quantity, plant }) => {
+export const addItemToTruck = async ({ truckNo, soNumber, soItem, lmgNumber, customerName, printDesign, quantity, plant }) => {
   try {
     const { error: insertError } = await supabase.from('fg_loading').insert([
       {
@@ -8,6 +8,8 @@ export const addItemToTruck = async ({ truckNo, soNumber, soItem, lmgNumber, qua
         so_number: soNumber,
         so_item: soItem,
         lmg_number: lmgNumber,
+        customer_name: customerName, 
+        print_design: printDesign,
         quantity: parseInt(quantity, 10),
         plant,
         status: 'Loading',
@@ -69,7 +71,7 @@ export const cancelItemGroup = async ({ truckNo, soNumber, soItem }) => {
 };
 
 
-export const finalizeShipment = async (session, plant, truckNo) => {
+export const finalizeShipment = async (user, plant, truckNo) => {
   try {
     // 1. Fetch all 'Loading' items for the given truck and plant
     const { data: itemsToFinalize, error: fetchError } = await supabase
@@ -91,10 +93,10 @@ export const finalizeShipment = async (session, plant, truckNo) => {
       return {
         ...movementData,
         movement_type: '601',
-        user_id: session?.user?.id,
+        user_id: user?.user_metadata?.display_name || user?.email,
         lmg_number: item.lmg_number,
         initial_loc: item.plant,
-        destination_loc: 'Customer',
+        destination_loc: truckNo,
       };
     });
 
@@ -104,15 +106,57 @@ export const finalizeShipment = async (session, plant, truckNo) => {
 
     if (insertError) throw insertError;
 
-    // 3. Update status in fg_loading to 'Finish Loading'
+    // 3. Update fg_stock for each item
+    for (const item of itemsToFinalize) {
+      const { lmg_number, quantity } = item;
+
+      // Fetch the current stock to get quantity and weight
+      const { data: stock, error: fetchStockError } = await supabase
+        .from('fg_stock')
+        .select('quantity, weight')
+        .eq('lmg_number', lmg_number)
+        .single();
+      
+      if (fetchStockError) {
+        // If stock not found, it might have been processed. Log and continue.
+        console.warn(`Could not find stock for LMG ${lmg_number} to update. It might have been deleted already.`);
+        continue;
+      }
+
+      const newQuantity = stock.quantity - quantity;
+
+      if (newQuantity <= 0) {
+        // If the new quantity is zero or less, delete the stock record
+        const { error: deleteError } = await supabase
+          .from('fg_stock')
+          .delete()
+          .eq('lmg_number', lmg_number);
+
+        if (deleteError) throw new Error(`Failed to delete stock for LMG ${lmg_number}: ${deleteError.message}`);
+
+      } else {
+        // Otherwise, update the quantity and weight
+        const unitWeight = stock.quantity > 0 ? Math.round((stock.weight / stock.quantity) * 100) / 100 : 0;
+        const newWeight = Math.round((newQuantity * unitWeight) * 100) / 100;
+
+        const { error: updateError } = await supabase
+          .from('fg_stock')
+          .update({ quantity: newQuantity, weight: newWeight })
+          .eq('lmg_number', lmg_number);
+
+        if (updateError) throw new Error(`Failed to update stock for LMG ${lmg_number}: ${updateError.message}`);
+      }
+    }
+
+    // 4. Update status in fg_loading to 'Completed'
     const { error: updateLoadingError } = await supabase
       .from('fg_loading')
-      .update({ status: 'Finish Loading' })
+      .update({ status: 'Completed' })
       .in('id', itemsToFinalize.map(item => item.id));
 
     if (updateLoadingError) throw updateLoadingError;
 
-    // 4. Aggregate quantities for each SO item
+    // 5. Aggregate quantities for each SO item
     const quantityUpdates = itemsToFinalize.reduce((acc, item) => {
       const key = `${item.so_number}-${item.so_item}`;
       if (!acc[key]) {
@@ -122,7 +166,8 @@ export const finalizeShipment = async (session, plant, truckNo) => {
       return acc;
     }, {});
 
-    // 5. Process each aggregated item to update delivery schedules
+    // 6. Process each aggregated item to update delivery schedules
+    /*
     const processScheduleUpdates = async () => {
       for (const update of Object.values(quantityUpdates)) {
         const shippedQty = update.quantity;
@@ -176,6 +221,7 @@ export const finalizeShipment = async (session, plant, truckNo) => {
     };
 
     await processScheduleUpdates();
+    */
 
     return { success: true, message: `Shipment for truck ${truckNo} finalized.` };
 
