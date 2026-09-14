@@ -95,7 +95,6 @@ export default function FgUploadStockIdentity({ plant }) {
                 print_design: row.print_design ? String(row.print_design).trim() : null,
                 quantity: parseNumber(row.quantity),
                 weight: parseNumber(row.weight),
-                updated_at: new Date().toISOString(),
             };
         }).filter(Boolean);
 

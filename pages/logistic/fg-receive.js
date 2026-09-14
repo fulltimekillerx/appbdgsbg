@@ -133,7 +133,7 @@ const FGStock = ({ plant }) => {
             type="text"
             id="binLocation"
             value={binLocation}
-            onChange={(e) => setBinLocation(e.target.value)}
+            onChange={(e) => setBinLocation(e.target.value.toUpperCase())}
             required
             disabled={submitting}
           />
@@ -144,7 +144,7 @@ const FGStock = ({ plant }) => {
             type="text"
             id="lmgNumber"
             value={lmgNumber}
-            onChange={(e) => setLmgNumber(e.target.value)}
+            onChange={(e) => setLmgNumber(e.target.value.toUpperCase())}
             required
             disabled={submitting}
           />

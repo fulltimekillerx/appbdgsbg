@@ -17,9 +17,12 @@ const FGLoading = ({ plant }) => {
   const [quantity, setQuantity] = useState('');
   const [loadingData, setLoadingData] = useState([]);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [driverName, setDriverName] = useState('');
+  const [expeditionName, setExpeditionName] = useState('');
+  const [tkbmName, setTkbmName] = useState('');
   const router = useRouter();
   const { user } = useAuth() || {};
-  const { addItemToTruck, deleteItemFromTruck, finalizeShipment } = useShipment();
+  const { addItemToTruck, deleteItemFromTruck, saveShipmentDetails, finalizeShipment } = useShipment();
   const { truck_no: truckNoFromQuery, so_number: soNumberFromQuery, so_item: soItemFromQuery } = router.query;
 
   const fetchLoadingData = async () => {
@@ -36,6 +39,13 @@ const FGLoading = ({ plant }) => {
 
       if (error) throw error;
       setLoadingData(data);
+
+      if (data.length > 0) {
+        setDriverName(data[0].driver_name || '');
+        setExpeditionName(data[0].expedition_name || '');
+        setTkbmName(data[0].tkbm_name || '');
+      }
+
     } catch (error) {
       setError(`Error fetching loading data: ${error.message}`);
     }
@@ -173,7 +183,7 @@ const FGLoading = ({ plant }) => {
     setError('');
     setSuccess('');
     setIsFinalizing(true);
-    const result = await finalizeShipment(plant, truckNo);
+    const result = await finalizeShipment(plant, truckNo, driverName, expeditionName, tkbmName);
     if (result.success) {
       setSuccess(result.message);
       fetchLoadingData();
@@ -183,8 +193,13 @@ const FGLoading = ({ plant }) => {
     setIsFinalizing(false);
   };
 
-  const handleBackToLoadingDock = () => {
-    router.push('/logistic/fg-loadingdock');
+  const handleBackToLoadingDock = async () => {
+    const result = await saveShipmentDetails({ truckNo, driverName, expeditionName, tkbmName });
+    if (result.success) {
+      router.push('/logistic/fg-loadingdock');
+    } else {
+      setError(result.message);
+    }
   };
 
   const canFinalize = loadingData.length > 0 && loadingData.some(item => item.status === 'Loading');
@@ -246,6 +261,22 @@ const FGLoading = ({ plant }) => {
       </form>
       </td>
       <td>
+      <div className="card mb-4">
+        <div className="card-header"><h3>Shipment Details</h3></div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-4">
+              <input type="text" className="form-control" placeholder="Driver Name" value={driverName} onChange={e => setDriverName(e.target.value)} />
+            </div>
+            <div className="col-md-4">
+              <input type="text" className="form-control" placeholder="Expedition Name" value={expeditionName} onChange={e => setExpeditionName(e.target.value)} />
+            </div>
+            <div className="col-md-4">
+              <input type="text" className="form-control" placeholder="TKBM Name" value={tkbmName} onChange={e => setTkbmName(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      </div>
       <h3>Items on this Truck</h3>
       {loadingData.length > 0 ? (
         <div className="card">

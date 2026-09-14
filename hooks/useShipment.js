@@ -105,7 +105,7 @@ export const useShipment = () => {
     }
   };
 
-  const finalizeShipment = async (plant, truckNo) => {
+  const finalizeShipment = async (plant, truckNo, driverName, expeditionName, tkbmName) => {
     try {
       // 1. Fetch all 'Loading' items for the given truck and plant
       const { data: itemsToFinalize, error: fetchError } = await supabase
@@ -125,7 +125,26 @@ export const useShipment = () => {
         throw new Error("User is not authenticated. Cannot finalize shipment.");
       }
 
-      // 2. Create stock movements
+      // 2. Generate loading_no
+      const today = new Date();
+      const dateString = `${String(today.getDate()).padStart(2, '0')}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getFullYear()).slice(-2)}`;
+      const { data: lastLoading, error: lastLoadingError } = await supabase
+          .from('fg_loading')
+          .select('loading_no')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+      if (lastLoadingError) throw lastLoadingError;
+
+      let newSequence = 1;
+      if (lastLoading && lastLoading.length > 0 && lastLoading[0].loading_no) {
+          const lastSequence = parseInt(lastLoading[0].loading_no.split('-')[1], 10);
+          newSequence = lastSequence + 1;
+      }
+
+      const loadingNo = `${dateString}-${newSequence}`;
+
+      // 3. Create stock movements
       const stockMovements = itemsToFinalize.map(item => {
         const { id, created_at, status, ...movementData } = item;
         return {
@@ -135,6 +154,7 @@ export const useShipment = () => {
           lmg_number: item.lmg_number,
           initial_loc: item.plant,
           destination_loc: truckNo,
+          loading_no: loadingNo, // Add loading_no to stock movements
         };
       });
 
@@ -144,7 +164,7 @@ export const useShipment = () => {
 
       if (insertError) throw insertError;
 
-      // 3. Update fg_stock for each item
+      // 4. Update fg_stock for each item
       for (const item of itemsToFinalize) {
         const { lmg_number, quantity } = item;
 
@@ -186,15 +206,21 @@ export const useShipment = () => {
         }
       }
 
-      // 4. Update status in fg_loading to 'Completed'
+      // 5. Update status in fg_loading to 'Loaded' and set loading_no
       const { error: updateLoadingError } = await supabase
         .from('fg_loading')
-        .update({ status: 'Completed' })
+        .update({ 
+          status: 'Loaded', 
+          loading_no: loadingNo,
+          driver_name: driverName,
+          expedition_name: expeditionName,
+          tkbm_name: tkbmName
+        })
         .in('id', itemsToFinalize.map(item => item.id));
 
       if (updateLoadingError) throw updateLoadingError;
 
-      // 5. Aggregate quantities for each SO item
+      // 6. Aggregate quantities for each SO item
       const quantityUpdates = itemsToFinalize.reduce((acc, item) => {
         const key = `${item.so_number}-${item.so_item}`;
         if (!acc[key]) {
@@ -204,7 +230,7 @@ export const useShipment = () => {
         return acc;
       }, {});
 
-      // 6. Process each aggregated item to update delivery schedules
+      // 7. Process each aggregated item to update delivery schedules
       /*
       const processScheduleUpdates = async () => {
         for (const update of Object.values(quantityUpdates)) {
@@ -261,7 +287,7 @@ export const useShipment = () => {
       await processScheduleUpdates();
       */
 
-      return { success: true, message: `Shipment for truck ${truckNo} finalized.` };
+      return { success: true, message: `Shipment for truck ${truckNo} finalized with Loading No: ${loadingNo}` };
 
     } catch (error) {
       return { success: false, message: `Error finalizing shipment: ${error.message}` };
