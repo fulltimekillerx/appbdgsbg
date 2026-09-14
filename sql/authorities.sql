@@ -38,7 +38,7 @@ VALUES
       ('ac-authority-manager', 'Manage user authorities'),
       ('ac-edit-account', 'Allow users to edit their own account details'),
       ('fg-delivery-schedule', 'Manage FG Delivery Schedules'),
-      ('fg-loading', 'Perform FG Loading'),
+      ('fg-deliverynote', 'Delivery Note'),
       ('fg-loadingdock', 'Manage FG Loading Docks'),
       ('fg-movement-history', 'View FG Movement History'),
       ('fg-outstanding', 'View Outstanding FG Deliveries'),

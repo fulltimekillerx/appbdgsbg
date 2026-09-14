@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useAuth } from '../hooks/useAuth';
-import { useState, useEffect, Children, cloneElement } from 'react';
+import { useState, useEffect, Children, cloneElement, useRef } from 'react';
 import { supabase } from '../supabase/client'; // Import supabase client
 
 const Layout = ({ children }) => {
@@ -9,6 +9,21 @@ const Layout = ({ children }) => {
   const [plant, setPlant] = useState('7025');
   const [openMenu, setOpenMenu] = useState(null);
   const [plants, setPlants] = useState([]);
+  const menuRef = useRef(null);
+
+  // Effect to handle clicks outside of the menu to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpenMenu(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Fetch permissions and plants when the user is loaded
   useEffect(() => {
@@ -84,14 +99,14 @@ const Layout = ({ children }) => {
       items: [
         { href: "/logistic/fg-outstanding", label: "Delivery Outstanding", permission: "fg-outstanding" },
         { href: "/logistic/fg-delivery-schedule", label: "Delivery Schedule", permission: "fg-delivery-schedule" },
-        { href: "/logistic/fg-stock", label: "Finished Goods Stock", permission: "fg-stock" },
-        { href: "/logistic/fg-loading", label: "Goods Issue", permission: "fg-loading" },
+        { href: "/logistic/fg-stock", label: "Stock", permission: "fg-stock" },
         { href: "/logistic/fg-loadingdock", label: "FG Loading Dock", permission: "fg-loadingdock" },
         { href: "/logistic/fg-receive", label: "Goods Receive", permission: "fg-receive" },
+        { href: "/logistic/fg-deliverynote", label: "Delivery Note", permission: "fg-deliverynote" },
         { href: "/logistic/fg-movement-history", label: "Movement History", permission: "fg-movement-history" },
         { href: "/logistic/fg-upload-delivery-schedule", label: "Upload Delivery Schedule", permission: "fg-upload-delivery-schedule" },
         { href: "/logistic/fg-upload-stock-identity", label: "Upload Stock Identity", permission: "fg-upload-stock-identity" },
-        { href: "/logistic/fg-transporter", label: "Transporter", permission: "fg-transporter" },
+        { href: "/logistic/fg-transporter-list", label: "Transporter", permission: "fg-transporter-list" },
       ]
     },
     "Account": {
@@ -125,8 +140,8 @@ const Layout = ({ children }) => {
   return (
     <div className="container">
       <header className="header">
-        <h1>WMS</h1>
-        <nav>
+        <h1>WES</h1>
+        <nav ref={menuRef}>
           <ul style={{ display: 'flex', listStyle: 'none', padding: 0 }}>
             {user ? (
               <>

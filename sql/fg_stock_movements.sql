@@ -20,13 +20,9 @@ CREATE TABLE public.fg_stock_movements (
   user_id text,
   delivery_schedule_id bigint,
   truck_no text,
+  loading_no text, -- Added to track the loading number
   CONSTRAINT fg_stock_movements_pkey PRIMARY KEY (id)
 );
 
 -- 3. Enable Row Level Security (RLS) for the table
 ALTER TABLE public.fg_stock_movements ENABLE ROW LEVEL SECURITY;
-
--- 4. Create policies for access control
--- Note: Policies might need to be adjusted based on your security requirements.
-CREATE POLICY "Allow authenticated users to view movements" ON public.fg_stock_movements FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Allow authenticated users to insert movements" ON public.fg_stock_movements FOR INSERT TO authenticated WITH CHECK (true);
